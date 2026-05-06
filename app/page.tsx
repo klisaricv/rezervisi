@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const navTabs = [
-  "HOME",
-  "PROSTORI",
-  "MUZIKA",
-  "DEKORACIJE",
-  "EFEKTI & RASVETA",
-  "FOTO & VIDEO",
-  "ULEPŠAVANJE",
-  "OSTALE USLUGE",
+  { label: "HOME", href: "/" },
+  { label: "PROSTORI", href: "/prostori" },
+  { label: "MUZIKA", href: "/muzika" },
+  { label: "DEKORACIJE", href: "/dekoracije" },
+  { label: "EFEKTI & RASVETA", href: "/efekti-rasveta" },
+  { label: "FOTO & VIDEO", href: "/foto-video" },
+  { label: "ULEPŠAVANJE", href: "/ulepsavanje" },
+  { label: "OSTALE USLUGE", href: "/ostale-usluge" },
 ];
 
 const categoryOptions = [
@@ -163,17 +163,13 @@ const items = [
 ];
 
 const sections = [
-  { title: "Istaknuti prostori", category: "Prostori" },
-  { title: "Istaknuta muzika", category: "Muzika" },
-  { title: "Istaknute dekoracije", category: "Dekoracije" },
-  { title: "Efekti i rasveta", category: "Efekti & Rasveta" },
-  { title: "Foto & video", category: "Foto & Video" },
-  { title: "Ulepšavanje i ostale usluge", category: "Ulepšavanje" },
+  { title: "Istaknuti prostori", category: "Prostori", href: "/prostori" },
+  { title: "Istaknuta muzika", category: "Muzika", href: "/muzika" },
+  { title: "Istaknute dekoracije", category: "Dekoracije", href: "/dekoracije" },
+  { title: "Efekti i rasveta", category: "Efekti & Rasveta", href: "/efekti-rasveta" },
+  { title: "Foto & video", category: "Foto & Video", href: "/foto-video" },
+  { title: "Ulepšavanje i ostale usluge", category: "Ulepšavanje", href: "/ulepsavanje" },
 ];
-
-function toggleItem(value: string, list: string[], setter: (v: string[]) => void) {
-  setter(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
-}
 
 function CompactSelect({
   label,
@@ -193,6 +189,7 @@ function CompactSelect({
       <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
         {label}
       </span>
+
       <select
         disabled={disabled}
         value={value}
@@ -237,6 +234,7 @@ function SearchBar() {
         options={categoryOptions}
         onChange={setCategory}
       />
+
       <CompactSelect
         label="Država"
         value={country}
@@ -247,6 +245,7 @@ function SearchBar() {
           setCity("");
         }}
       />
+
       <CompactSelect
         label="Regija"
         value={region}
@@ -257,6 +256,7 @@ function SearchBar() {
           setCity("");
         }}
       />
+
       <CompactSelect
         label="Grad"
         value={city}
@@ -264,6 +264,7 @@ function SearchBar() {
         disabled={!country}
         onChange={setCity}
       />
+
       <button className="m-2 rounded-2xl bg-rose-600 px-7 py-4 text-sm font-black text-white shadow-lg shadow-rose-600/25 transition hover:bg-rose-700">
         Pretraži
       </button>
@@ -287,6 +288,7 @@ function SearchBar() {
               Kategorija, država, regija, grad
             </p>
           </div>
+
           <span className="rounded-2xl bg-rose-600 px-4 py-3 text-sm font-black text-white">
             Otvori
           </span>
@@ -298,6 +300,7 @@ function SearchBar() {
           <div className="mt-16 rounded-3xl bg-white p-4 shadow-premium">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-xl font-black">Filteri</h3>
+
               <button
                 onClick={() => setMobileOpen(false)}
                 className="rounded-full bg-slate-100 px-4 py-2 font-black"
@@ -305,6 +308,7 @@ function SearchBar() {
                 X
               </button>
             </div>
+
             {bar}
           </div>
         </div>
@@ -358,10 +362,12 @@ function Card({
           <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-600">
             {item.category}
           </span>
+
           <span className="text-xs font-bold text-slate-400">Verifikovano</span>
         </div>
 
         <h3 className="text-lg font-black text-slate-950">{item.title}</h3>
+
         <p className="mt-2 min-h-[48px] text-sm leading-6 text-slate-600">
           {item.description}
         </p>
@@ -375,6 +381,7 @@ function Card({
             <p className="text-xs font-black uppercase text-slate-400">Cena</p>
             <p className="text-xl font-black text-slate-950">{item.price}</p>
           </div>
+
           <button className="rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600">
             Detalji
           </button>
@@ -385,43 +392,93 @@ function Card({
 }
 
 function Header() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-        <div className="text-2xl font-black tracking-tight">
-          Rezervisi<span className="text-rose-600">.to</span>
+    <>
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xl font-black text-slate-900 xl:hidden"
+            aria-label="Otvori meni"
+          >
+            ☰
+          </button>
+
+          <a href="/" className="shrink-0 text-2xl font-black tracking-tight">
+            Rezervisi<span className="text-rose-600">.to</span>
+          </a>
+
+          <a
+            href="/dodaj-uslugu"
+            className="shrink-0 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600"
+          >
+            Dodaj uslugu
+          </a>
         </div>
 
-        <nav className="no-scrollbar hidden max-w-3xl gap-1 overflow-x-auto rounded-full bg-slate-100 p-1 xl:flex">
-          {navTabs.map((tab) => (
-            <button
-              key={tab}
-              className="shrink-0 rounded-full px-4 py-2 text-xs font-black text-slate-600 transition hover:bg-white hover:text-rose-600 hover:shadow-sm"
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
+        <div className="hidden border-t border-slate-100 px-4 pb-3 xl:block">
+          <nav className="no-scrollbar mx-auto flex max-w-7xl items-center justify-center gap-2 overflow-x-auto rounded-full bg-slate-100 p-1">
+            {navTabs.map((tab) => (
+              <a
+                key={tab.label}
+                href={tab.href}
+                className="shrink-0 rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wide text-slate-600 transition hover:bg-white hover:text-rose-600 hover:shadow-sm"
+              >
+                {tab.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </header>
 
-        <a
-          href="/dodaj-uslugu"
-          className="rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600"
-        >
-          Dodaj uslugu
-        </a>
-      </div>
-
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-3 xl:hidden">
-        {navTabs.map((tab) => (
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] xl:hidden">
           <button
-            key={tab}
-            className="shrink-0 rounded-full bg-slate-100 px-4 py-2 text-xs font-black text-slate-700"
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-    </header>
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
+            aria-label="Zatvori meni"
+          />
+
+          <aside className="absolute left-0 top-0 h-full w-[82%] max-w-sm bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <a
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-2xl font-black tracking-tight"
+              >
+                Rezervisi<span className="text-rose-600">.to</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg font-black text-slate-700"
+                aria-label="Zatvori meni"
+              >
+                ×
+              </button>
+            </div>
+
+            <nav className="flex flex-col gap-2 p-5">
+              {navTabs.map((tab) => (
+                <a
+                  key={tab.label}
+                  href={tab.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="rounded-2xl bg-slate-50 px-4 py-4 text-sm font-black uppercase tracking-wide text-slate-700 transition hover:bg-rose-50 hover:text-rose-600"
+                >
+                  {tab.label}
+                </a>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -430,18 +487,53 @@ function HeroVisual() {
     <div className="relative hidden lg:block">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-4 pt-16">
-          <div className="card-art h-56 rounded-[32px] shadow-premium" style={{"--from":"#fb7185","--to":"#f97316"} as React.CSSProperties}>
+          <div
+            className="card-art h-56 rounded-[32px] shadow-premium"
+            style={
+              {
+                "--from": "#fb7185",
+                "--to": "#f97316",
+              } as React.CSSProperties
+            }
+          >
             <div className="flex h-full items-end p-6 text-6xl">🏛️</div>
           </div>
-          <div className="card-art h-44 rounded-[32px] shadow-premium" style={{"--from":"#0ea5e9","--to":"#6366f1"} as React.CSSProperties}>
+
+          <div
+            className="card-art h-44 rounded-[32px] shadow-premium"
+            style={
+              {
+                "--from": "#0ea5e9",
+                "--to": "#6366f1",
+              } as React.CSSProperties
+            }
+          >
             <div className="flex h-full items-end p-6 text-6xl">🎤</div>
           </div>
         </div>
+
         <div className="space-y-4">
-          <div className="card-art h-44 rounded-[32px] shadow-premium" style={{"--from":"#f43f5e","--to":"#d946ef"} as React.CSSProperties}>
+          <div
+            className="card-art h-44 rounded-[32px] shadow-premium"
+            style={
+              {
+                "--from": "#f43f5e",
+                "--to": "#d946ef",
+              } as React.CSSProperties
+            }
+          >
             <div className="flex h-full items-end p-6 text-6xl">🌸</div>
           </div>
-          <div className="card-art h-64 rounded-[32px] shadow-premium" style={{"--from":"#334155","--to":"#64748b"} as React.CSSProperties}>
+
+          <div
+            className="card-art h-64 rounded-[32px] shadow-premium"
+            style={
+              {
+                "--from": "#334155",
+                "--to": "#64748b",
+              } as React.CSSProperties
+            }
+          >
             <div className="flex h-full items-end p-6 text-6xl">📸</div>
           </div>
         </div>
@@ -455,25 +547,15 @@ function HeroVisual() {
   );
 }
 
-function CategoryRail() {
-  return (
-    <section className="mx-auto max-w-7xl px-4 pt-8">
-      <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
-        {categoryOptions.map((cat, index) => (
-          <button
-            key={cat}
-            className="shrink-0 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-rose-300 hover:shadow-card"
-          >
-            <div className="text-2xl">{["🏛️", "🎤", "🌸", "💡", "📸", "💄", "✨"][index]}</div>
-            <div className="mt-2 text-sm font-black text-slate-900">{cat}</div>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Section({ title, category }: { title: string; category: string }) {
+function Section({
+  title,
+  category,
+  href,
+}: {
+  title: string;
+  category: string;
+  href: string;
+}) {
   const data = items.filter((item) => item.category === category);
 
   return (
@@ -483,13 +565,18 @@ function Section({ title, category }: { title: string; category: string }) {
           <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-600">
             Preporučeno
           </p>
+
           <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-4xl">
             {title}
           </h2>
         </div>
-        <button className="hidden rounded-full bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-rose-600 md:block">
+
+        <a
+          href={href}
+          className="hidden rounded-full bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-rose-600 md:block"
+        >
           Pogledaj sve
-        </button>
+        </a>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -502,11 +589,45 @@ function Section({ title, category }: { title: string; category: string }) {
 }
 
 export default function Page() {
+  const filterRef = useRef<HTMLDivElement | null>(null);
+  const [filterFixed, setFilterFixed] = useState(false);
+
+  useEffect(() => {
+    function handleScroll() {
+      if (!filterRef.current) return;
+
+      const rect = filterRef.current.getBoundingClientRect();
+
+      // Header height: desktop oko 154px, mobile oko 84px
+      const headerOffset = window.innerWidth >= 1280 ? 154 : 84;
+
+      setFilterFixed(rect.top <= headerOffset);
+    }
+
+    handleScroll();
+
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("resize", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, []);
+
   return (
     <main className="min-h-screen">
       <Header />
 
-      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,#ffe4e6,transparent_34%),radial-gradient(circle_at_top_right,#fed7aa,transparent_30%),linear-gradient(180deg,#fff,#f8fafc)]">
+      {filterFixed && (
+        <div className="fixed left-0 right-0 top-[84px] z-40 border-y border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-xl xl:top-[125px]">
+          <div className="mx-auto max-w-7xl">
+            <SearchBar />
+          </div>
+        </div>
+      )}
+
+      <section className="relative bg-[radial-gradient(circle_at_top_left,#ffe4e6,transparent_34%),radial-gradient(circle_at_top_right,#fed7aa,transparent_30%),linear-gradient(180deg,#fff,#f8fafc)]">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 md:py-16 lg:grid-cols-[1.05fr_.95fr]">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-rose-600 shadow-sm ring-1 ring-rose-100">
@@ -518,18 +639,29 @@ export default function Page() {
             </h1>
 
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
-              Prostori, muzika, dekoracije, efekti, foto & video i ulepšavanje za svadbe,
-              rođendane, klubove i privatne događaje.
+              Prostori, muzika, dekoracije, efekti, foto & video i ulepšavanje
+              za svadbe, rođendane, klubove i privatne događaje.
             </p>
 
-            <div className="mt-8 max-w-5xl">
+            <div
+              ref={filterRef}
+              className={`mt-8 transition-opacity duration-200 ${
+                filterFixed ? "opacity-0" : "opacity-100"
+              }`}
+            >
               <SearchBar />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3 text-sm font-bold text-slate-500">
-              <span className="rounded-full bg-white px-4 py-2 shadow-sm">✓ Provereni ponuđači</span>
-              <span className="rounded-full bg-white px-4 py-2 shadow-sm">✓ Srbija, BiH, dijaspora</span>
-              <span className="rounded-full bg-white px-4 py-2 shadow-sm">✓ Cene odmah vidljive</span>
+              <span className="rounded-full bg-white px-4 py-2 shadow-sm">
+                ✓ Provereni ponuđači
+              </span>
+              <span className="rounded-full bg-white px-4 py-2 shadow-sm">
+                ✓ Srbija, BiH, dijaspora
+              </span>
+              <span className="rounded-full bg-white px-4 py-2 shadow-sm">
+                ✓ Cene odmah vidljive
+              </span>
             </div>
           </div>
 
@@ -537,16 +669,13 @@ export default function Page() {
         </div>
       </section>
 
-      <CategoryRail />
-
-      <div className="sticky top-[65px] z-40 hidden border-y border-slate-200 bg-white/85 px-4 py-3 backdrop-blur-xl lg:block">
-        <div className="mx-auto max-w-7xl">
-          <SearchBar />
-        </div>
-      </div>
-
       {sections.map((section) => (
-        <Section key={section.title} title={section.title} category={section.category} />
+        <Section
+          key={section.title}
+          title={section.title}
+          category={section.category}
+          href={section.href}
+        />
       ))}
 
       <section className="mx-auto max-w-7xl px-4 py-14">
@@ -556,17 +685,23 @@ export default function Page() {
               <p className="text-sm font-black uppercase tracking-[0.2em] text-rose-300">
                 Za ponuđače
               </p>
+
               <h2 className="mt-3 text-3xl font-black md:text-5xl">
                 Imaš prostor, bend ili uslugu?
               </h2>
+
               <p className="mt-4 max-w-2xl text-white/70">
-                Dodaj listing, prikaži cenu i lokaciju, i dobij upite od klijenata koji već planiraju event.
+                Dodaj listing, prikaži cenu i lokaciju, i dobij upite od
+                klijenata koji već planiraju event.
               </p>
             </div>
 
-            <button className="rounded-full bg-white px-8 py-4 text-sm font-black text-slate-950 transition hover:bg-rose-100">
+            <a
+              href="/dodaj-uslugu"
+              className="rounded-full bg-white px-8 py-4 text-sm font-black text-slate-950 transition hover:bg-rose-100"
+            >
               Postani ponuđač
-            </button>
+            </a>
           </div>
         </div>
       </section>
