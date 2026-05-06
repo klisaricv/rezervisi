@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f7f7fb;
+  --ink: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.card-art {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,.52), transparent 32%),
+    radial-gradient(circle at 80% 10%, rgba(255,255,255,.35), transparent 28%),
+    linear-gradient(135deg, var(--from), var(--to));
+}
+
+.glass {
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(18px);
+}
