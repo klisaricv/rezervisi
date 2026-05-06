@@ -403,9 +403,12 @@ function Header() {
           ))}
         </nav>
 
-        <button className="rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600">
+        <a
+          href="/dodaj-uslugu"
+          className="rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600"
+        >
           Dodaj uslugu
-        </button>
+        </a>
       </div>
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-3 xl:hidden">
