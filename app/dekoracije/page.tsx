@@ -4,7 +4,7 @@ export default function DekoracijePage() {
   return (
     <CategoryPage
       title="Dekoracije"
-      category="Dekoracije"
+      category="dekoracije"
       subtitle="Cveće, baloni, dekoracija sale, mladenački sto, pozivnice i kompletno uređenje događaja."
     />
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
 
 const navTabs = [
   { label: "HOME", href: "/" },
@@ -379,14 +378,18 @@ export default function CategoryPage({
 
   useEffect(() => {
     async function loadServices() {
-      const { data } = await supabase
-        .from("services")
-        .select("*")
-        .eq("category", category)
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
+      const params = new URLSearchParams({
+        category,
+        });
 
-      setServices((data || []) as Service[]);
+        const response = await fetch(`/api/services?${params.toString()}`);
+        const result = await response.json();
+
+        if (result.success) {
+        setServices(result.data || []);
+        } else {
+        setServices([]);
+        }
     }
 
     loadServices();

@@ -371,13 +371,21 @@ export default function AddServicePage() {
         status: "pending",
       };
 
-      const { data, error } = await supabase
-        .from("services")
-        .insert(payload)
-        .select("id")
-        .single();
+      const response = await fetch("/api/services", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        });
 
-      if (error) throw error;
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+        throw new Error(result.error || "Greška pri kreiranju usluge.");
+        }
+
+        const data = result.data;
 
       if (files.length && data?.id) {
         for (const file of files) {

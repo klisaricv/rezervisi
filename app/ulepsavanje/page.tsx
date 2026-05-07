@@ -4,7 +4,7 @@ export default function UlepsavanjePage() {
   return (
     <CategoryPage
       title="Ulepšavanje"
-      category="Ulepšavanje"
+      category="ulepsavanje"
       subtitle="Šminka, frizura, nokti, beauty timovi i priprema za venčanja i proslave."
     />
   );
