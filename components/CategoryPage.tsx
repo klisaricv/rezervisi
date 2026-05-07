@@ -44,6 +44,7 @@ type Service = {
   title: string;
   category: string;
   category_slug?: string | null;
+  service_slug?: string | null;
   description: string;
   country: string | null;
   region: string | null;
@@ -115,13 +116,40 @@ function FilterSelect({
               className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"
             >
               {option}
-              {selected.includes(option) && <span className="text-rose-600">✓</span>}
+              {selected.includes(option) && (
+                <span className="text-rose-600">✓</span>
+              )}
             </button>
           ))}
         </div>
       )}
     </div>
   );
+}
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "dj")
+    .replace(/Đ/g, "dj")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getCategorySlugFromService(service: Service) {
+  if (service.category_slug) return service.category_slug;
+
+  if (service.category.startsWith("Prostori")) return "prostori";
+  if (service.category.startsWith("Muzika")) return "muzika";
+  if (service.category.startsWith("Dekoracije")) return "dekoracije";
+  if (service.category.startsWith("Efekti")) return "efekti-rasveta";
+  if (service.category.startsWith("Foto")) return "foto-video";
+  if (service.category.startsWith("Ulepšavanje")) return "ulepsavanje";
+  if (service.category.startsWith("Ostale")) return "ostale-usluge";
+
+  return "usluge";
 }
 
 function getContact(service: Service) {
@@ -134,17 +162,11 @@ function getContact(service: Service) {
 }
 
 function getCategoryLabel(service: Service) {
-  if (service.category_slug && categoryLabels[service.category_slug]) {
-    return categoryLabels[service.category_slug];
-  }
+  const categorySlug = getCategorySlugFromService(service);
 
-  if (service.category.startsWith("Prostori")) return "PROSTORI";
-  if (service.category.startsWith("Muzika")) return "MUZIKA";
-  if (service.category.startsWith("Dekoracije")) return "DEKORACIJE";
-  if (service.category.startsWith("Efekti")) return "EFEKTI & RASVETA";
-  if (service.category.startsWith("Foto")) return "FOTO & VIDEO";
-  if (service.category.startsWith("Ulepšavanje")) return "ULEPŠAVANJE";
-  if (service.category.startsWith("Ostale")) return "OSTALE USLUGE";
+  if (categoryLabels[categorySlug]) {
+    return categoryLabels[categorySlug];
+  }
 
   return service.category;
 }
@@ -195,6 +217,9 @@ function ServiceCard({ service }: { service: Service }) {
   const visibleLocations = locationParts.slice(0, 4);
   const extraLocationsCount = Math.max(locationParts.length - 4, 0);
 
+  const detailCategory = getCategorySlugFromService(service);
+  const detailSlug = service.service_slug || slugify(service.title) || service.id;
+
   const shortDescription =
     service.description && service.description.length > 150
       ? `${service.description.slice(0, 150).trim()}...`
@@ -202,7 +227,6 @@ function ServiceCard({ service }: { service: Service }) {
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-[30px] border border-slate-200/70 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_85px_rgba(15,23,42,0.14)]">
-      {/* COVER */}
       <div className="relative h-[285px] overflow-hidden bg-gradient-to-br from-slate-100 via-rose-50 to-orange-50">
         {coverImageUrl ? (
           <>
@@ -243,9 +267,7 @@ function ServiceCard({ service }: { service: Service }) {
         </button>
       </div>
 
-      {/* CONTENT */}
       <div className="flex flex-1 flex-col px-6 pb-6 pt-5">
-        {/* BADGES */}
         <div className="flex items-center justify-between gap-3">
           <span className="rounded-full bg-rose-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-rose-600">
             {getCategoryLabel(service)}
@@ -256,7 +278,6 @@ function ServiceCard({ service }: { service: Service }) {
           </span>
         </div>
 
-        {/* TITLE + DESCRIPTION PREMIUM BLOCK */}
         <div className="mt-5 rounded-[24px] border border-slate-100 bg-gradient-to-br from-white via-slate-50/80 to-white p-5 shadow-sm">
           <h3 className="text-[27px] font-black leading-[1.08] tracking-tight text-slate-950">
             {service.title}
@@ -269,7 +290,6 @@ function ServiceCard({ service }: { service: Service }) {
           </p>
         </div>
 
-        {/* DOSTUPNOST */}
         <div className="mt-4 rounded-[22px] border border-slate-100 bg-slate-50/80 p-4 shadow-sm">
           <div className="mb-3 flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm shadow-sm ring-1 ring-slate-100">
@@ -298,7 +318,6 @@ function ServiceCard({ service }: { service: Service }) {
           </div>
         </div>
 
-        {/* KONTAKT */}
         <div className="mt-4 rounded-[22px] border border-slate-100 bg-slate-50/80 p-4 shadow-sm">
           <div className="mb-3 flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm shadow-sm ring-1 ring-slate-100">
@@ -316,14 +335,36 @@ function ServiceCard({ service }: { service: Service }) {
           </div>
         </div>
 
-        {/* CTA */}
         <div className="mt-5">
-          <button className="w-full rounded-[20px] bg-slate-950 px-6 py-4 text-sm font-black uppercase tracking-[0.08em] text-white shadow-lg shadow-slate-950/15 transition hover:bg-rose-600 hover:shadow-rose-600/20">
+          <a
+            href={`/${detailCategory}/${detailSlug}`}
+            className="flex w-full items-center justify-center rounded-[20px] bg-slate-950 px-6 py-4 text-sm font-black uppercase tracking-[0.08em] text-white shadow-lg shadow-slate-950/15 transition hover:bg-rose-600 hover:shadow-rose-600/20"
+          >
             Detalji
-          </button>
+          </a>
         </div>
       </div>
     </article>
+  );
+}
+
+function ServiceCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-[30px] border border-slate-200/70 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.08)]">
+      <div className="h-[285px] animate-pulse bg-slate-100" />
+
+      <div className="space-y-4 p-6">
+        <div className="flex justify-between gap-3">
+          <div className="h-9 w-32 animate-pulse rounded-full bg-slate-100" />
+          <div className="h-9 w-28 animate-pulse rounded-full bg-slate-100" />
+        </div>
+
+        <div className="h-44 animate-pulse rounded-[24px] bg-slate-100" />
+        <div className="h-28 animate-pulse rounded-[22px] bg-slate-100" />
+        <div className="h-28 animate-pulse rounded-[22px] bg-slate-100" />
+        <div className="h-14 animate-pulse rounded-[20px] bg-slate-100" />
+      </div>
+    </div>
   );
 }
 
@@ -337,6 +378,7 @@ export default function CategoryPage({
   subtitle: string;
 }) {
   const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   const [countries, setCountries] = useState<string[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
@@ -364,17 +406,25 @@ export default function CategoryPage({
 
   useEffect(() => {
     async function loadServices() {
-      const params = new URLSearchParams({
-        category,
-      });
+      try {
+        setLoading(true);
 
-      const response = await fetch(`/api/services?${params.toString()}`);
-      const result = await response.json();
+        const params = new URLSearchParams({
+          category,
+        });
 
-      if (result.success) {
-        setServices(result.data || []);
-      } else {
+        const response = await fetch(`/api/services?${params.toString()}`);
+        const result = await response.json();
+
+        if (result.success) {
+          setServices(result.data || []);
+        } else {
+          setServices([]);
+        }
+      } catch {
         setServices([]);
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -475,7 +525,13 @@ export default function CategoryPage({
         </section>
 
         <section className="mx-auto max-w-[1320px] px-4 py-10">
-          {filteredServices.length === 0 ? (
+          {loading ? (
+            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+              {[1, 2, 3].map((item) => (
+                <ServiceCardSkeleton key={item} />
+              ))}
+            </div>
+          ) : filteredServices.length === 0 ? (
             <div className="rounded-[28px] border border-dashed border-slate-200 bg-white p-10 text-center">
               <p className="text-lg font-black text-slate-950">
                 Još nema odobrenih usluga u ovoj kategoriji.

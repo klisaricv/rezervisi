@@ -26,7 +26,54 @@ function getCategorySlug(category: string) {
   if (category.startsWith("Foto")) return "foto-video";
   if (category.startsWith("Ulepšavanje")) return "ulepsavanje";
   if (category.startsWith("Ostale")) return "ostale-usluge";
+
   return null;
+}
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "dj")
+    .replace(/Đ/g, "dj")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+async function generateUniqueServiceSlug(
+  title: string,
+  categorySlug: string | null
+) {
+  const baseSlug = slugify(title) || "usluga";
+
+  let finalSlug = baseSlug;
+  let counter = 2;
+
+  while (true) {
+    let query = supabaseAdmin
+      .from("services")
+      .select("id")
+      .eq("service_slug", finalSlug)
+      .limit(1);
+
+    if (categorySlug) {
+      query = query.eq("category_slug", categorySlug);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      return finalSlug;
+    }
+
+    finalSlug = `${baseSlug}-${counter}`;
+    counter++;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -185,10 +232,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const categorySlug = getCategorySlug(category);
+    const serviceSlug = await generateUniqueServiceSlug(title, categorySlug);
+
     const payload = {
       title,
       category,
-      category_slug: getCategorySlug(category),
+      category_slug: categorySlug,
+      service_slug: serviceSlug,
       description,
 
       country: body.country || null,
@@ -218,7 +269,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from("services")
       .insert(payload)
-      .select("id")
+      .select("id, category_slug, service_slug")
       .single();
 
     if (error) {
@@ -238,11 +289,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch {
+  } catch (err: any) {
     return NextResponse.json(
       {
         success: false,
-        error: "Invalid request body.",
+        error: err?.message || "Invalid request body.",
       },
       { status: 400 }
     );
