@@ -1,17 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-
-const navTabs = [
-  { label: "HOME", href: "/" },
-  { label: "PROSTORI", href: "/prostori" },
-  { label: "MUZIKA", href: "/muzika" },
-  { label: "DEKORACIJE", href: "/dekoracije" },
-  { label: "EFEKTI & RASVETA", href: "/efekti-rasveta" },
-  { label: "FOTO & VIDEO", href: "/foto-video" },
-  { label: "ULEPŠAVANJE", href: "/ulepsavanje" },
-  { label: "OSTALE USLUGE", href: "/ostale-usluge" },
-];
+import SiteHeader from "../components/Header";
 
 const categoryOptions = [
   "Prostori",
@@ -221,10 +211,29 @@ function SearchBar() {
 
   const cities = useMemo(() => {
     if (!country) return [];
+
     const data = locationData[country] || {};
+
     if (region) return data[region] || [];
+
     return Object.values(data).flat();
   }, [country, region]);
+
+  function getCategoryHref() {
+    if (category === "Prostori") return "/prostori";
+    if (category === "Muzika") return "/muzika";
+    if (category === "Dekoracije") return "/dekoracije";
+    if (category === "Efekti & Rasveta") return "/efekti-rasveta";
+    if (category === "Foto & Video") return "/foto-video";
+    if (category === "Ulepšavanje") return "/ulepsavanje";
+    if (category === "Ostale usluge") return "/ostale-usluge";
+
+    return "/";
+  }
+
+  function handleSearch() {
+    window.location.href = getCategoryHref();
+  }
 
   const bar = (
     <div className="grid overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-premium md:grid-cols-[1.1fr_1fr_1fr_1fr_auto]">
@@ -239,8 +248,8 @@ function SearchBar() {
         label="Država"
         value={country}
         options={Object.keys(locationData)}
-        onChange={(v) => {
-          setCountry(v);
+        onChange={(value) => {
+          setCountry(value);
           setRegion("");
           setCity("");
         }}
@@ -251,8 +260,8 @@ function SearchBar() {
         value={region}
         options={regions}
         disabled={!country}
-        onChange={(v) => {
-          setRegion(v);
+        onChange={(value) => {
+          setRegion(value);
           setCity("");
         }}
       />
@@ -265,7 +274,11 @@ function SearchBar() {
         onChange={setCity}
       />
 
-      <button className="m-2 rounded-2xl bg-rose-600 px-7 py-4 text-sm font-black text-white shadow-lg shadow-rose-600/25 transition hover:bg-rose-700">
+      <button
+        type="button"
+        onClick={handleSearch}
+        className="m-2 rounded-2xl bg-rose-600 px-7 py-4 text-sm font-black text-white shadow-lg shadow-rose-600/25 transition hover:bg-rose-700"
+      >
         Pretraži
       </button>
     </div>
@@ -277,6 +290,7 @@ function SearchBar() {
 
       <div className="md:hidden">
         <button
+          type="button"
           onClick={() => setMobileOpen(true)}
           className="flex w-full items-center justify-between rounded-3xl bg-white px-5 py-4 text-left shadow-premium"
         >
@@ -302,6 +316,7 @@ function SearchBar() {
               <h3 className="text-xl font-black">Filteri</h3>
 
               <button
+                type="button"
                 onClick={() => setMobileOpen(false)}
                 className="rounded-full bg-slate-100 px-4 py-2 font-black"
               >
@@ -388,97 +403,6 @@ function Card({
         </div>
       </div>
     </article>
-  );
-}
-
-function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  return (
-    <>
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xl font-black text-slate-900 xl:hidden"
-            aria-label="Otvori meni"
-          >
-            ☰
-          </button>
-
-          <a href="/" className="shrink-0 text-2xl font-black tracking-tight">
-            Rezervisi<span className="text-rose-600">.to</span>
-          </a>
-
-          <a
-            href="/dodaj-uslugu"
-            className="shrink-0 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600"
-          >
-            Dodaj uslugu
-          </a>
-        </div>
-
-        <div className="hidden border-t border-slate-100 px-4 pb-3 xl:block">
-          <nav className="no-scrollbar mx-auto flex max-w-7xl items-center justify-center gap-2 overflow-x-auto rounded-full bg-slate-100 p-1">
-            {navTabs.map((tab) => (
-              <a
-                key={tab.label}
-                href={tab.href}
-                className="shrink-0 rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wide text-slate-600 transition hover:bg-white hover:text-rose-600 hover:shadow-sm"
-              >
-                {tab.label}
-              </a>
-            ))}
-          </nav>
-        </div>
-      </header>
-
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] xl:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(false)}
-            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
-            aria-label="Zatvori meni"
-          />
-
-          <aside className="absolute left-0 top-0 h-full w-[82%] max-w-sm bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <a
-                href="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-2xl font-black tracking-tight"
-              >
-                Rezervisi<span className="text-rose-600">.to</span>
-              </a>
-
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg font-black text-slate-700"
-                aria-label="Zatvori meni"
-              >
-                ×
-              </button>
-            </div>
-
-            <nav className="flex flex-col gap-2 p-5">
-              {navTabs.map((tab) => (
-                <a
-                  key={tab.label}
-                  href={tab.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-2xl bg-slate-50 px-4 py-4 text-sm font-black uppercase tracking-wide text-slate-700 transition hover:bg-rose-50 hover:text-rose-600"
-                >
-                  {tab.label}
-                </a>
-              ))}
-            </nav>
-          </aside>
-        </div>
-      )}
-    </>
   );
 }
 
@@ -598,8 +522,7 @@ export default function Page() {
 
       const rect = filterRef.current.getBoundingClientRect();
 
-      // Header height: desktop oko 154px, mobile oko 84px
-      const headerOffset = window.innerWidth >= 1280 ? 154 : 84;
+      const headerOffset = window.innerWidth >= 1280 ? 125 : 84;
 
       setFilterFixed(rect.top <= headerOffset);
     }
@@ -617,7 +540,7 @@ export default function Page() {
 
   return (
     <main className="min-h-screen">
-      <Header />
+      <SiteHeader />
 
       {filterFixed && (
         <div className="fixed left-0 right-0 top-[84px] z-40 border-y border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-xl xl:top-[125px]">
