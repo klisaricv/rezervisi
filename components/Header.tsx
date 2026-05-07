@@ -45,7 +45,6 @@ export default function Header({
       });
 
       const result = await response.json();
-
       setIsAdmin(Boolean(result.isAdmin));
     } catch {
       setIsAdmin(false);
