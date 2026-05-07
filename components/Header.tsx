@@ -54,9 +54,10 @@ export default function Header({
   }
 
   async function handleLogout() {
+    setMobileMenuOpen(false);
     await supabase.auth.signOut();
     window.location.href = "/";
-  }
+    }
 
   useEffect(() => {
     loadAuthState();

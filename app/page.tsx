@@ -63,6 +63,8 @@ type Service = {
   id: string;
   title: string;
   category: string;
+  status?: string | null;
+  is_featured?: boolean | null;
   category_slug?: string | null;
   service_slug?: string | null;
   description: string;
@@ -497,31 +499,91 @@ function FeaturedCardSkeleton() {
 function HeroVisual() {
   return (
     <div className="relative hidden lg:block">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-4 pt-16">
-          <div className="card-art h-56 rounded-[32px] shadow-premium">
-            <div className="flex h-full items-end p-6 text-6xl">🏛️</div>
+      <div className="absolute -inset-6 rounded-[42px] bg-[radial-gradient(circle_at_top_right,rgba(225,29,72,0.14),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(251,146,60,0.12),transparent_38%)] blur-2xl" />
+
+      <div className="relative overflow-hidden rounded-[36px] border border-white/80 bg-white/75 p-5 shadow-[0_28px_80px_rgba(15,23,42,0.11)] backdrop-blur-2xl">
+        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-rose-100/70 blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-orange-100/70 blur-3xl" />
+
+        <div className="relative">
+          <div className="rounded-[30px] border border-slate-100 bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.07)]">
+            <div className="mx-auto flex h-[120px] max-w-[420px] items-center justify-center overflow-hidden rounded-[24px] bg-gradient-to-br from-slate-50 via-white to-rose-50/40 px-6 shadow-inner ring-1 ring-slate-100">
+              <img
+                src="/rezervisi-logo-full.png"
+                alt="Rezervisi.to"
+                className="h-auto w-full scale-[1.15] object-contain"
+              />
+            </div>
+
+            <div className="mt-5 text-center">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-rose-600">
+                Organizacija bez stresa
+              </p>
+
+              <h3 className="mx-auto mt-2 max-w-[440px] text-[28px] font-black leading-[1.05] tracking-tight text-slate-950">
+                Sve za tvoju proslavu — brzo i pregledno.
+              </h3>
+
+              <p className="mx-auto mt-3 max-w-[470px] text-[13px] leading-6 text-slate-600">
+                Bez beskonačnog traganja po Instagramu, YouTube-u, Google-u i
+                drugim platformama — ovde možeš pronaći prostor, muziku,
+                dekoraciju, fotografa, efekte i sve ostalo na jednom mestu.
+              </p>
+            </div>
           </div>
 
-          <div className="card-art h-44 rounded-[32px] shadow-premium">
-            <div className="flex h-full items-end p-6 text-6xl">🎤</div>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="rounded-[22px] border border-white/80 bg-white/85 p-4 text-center shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+              <p className="text-lg font-black leading-tight text-slate-950">
+                Sve usluge
+              </p>
+              <p className="mt-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                Na jednom mestu
+              </p>
+            </div>
+
+            <div className="rounded-[22px] border border-white/80 bg-white/85 p-4 text-center shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+              <p className="text-lg font-black leading-tight text-slate-950">
+                Manje traženja
+              </p>
+              <p className="mt-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                Više izbora
+              </p>
+            </div>
+
+            <div className="rounded-[22px] border border-white/80 bg-white/85 p-4 text-center shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+              <p className="text-lg font-black leading-tight text-slate-950">
+                Direktan upit
+              </p>
+              <p className="mt-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                Bez komplikacija
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[28px] bg-slate-950 p-5 text-white shadow-[0_20px_55px_rgba(15,23,42,0.20)]">
+            <div className="flex items-center justify-between gap-5">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
+                  Za svadbe, rođendane i proslave
+                </p>
+
+                <p className="mt-2 text-xl font-black">
+                  Pronađi. Uporedi. Kontaktiraj.
+                </p>
+
+                <p className="mt-2 max-w-[410px] text-[13px] leading-5 text-white/65">
+                  Pregledaj ponudu, otvori detalje i pošalji upit direktno
+                  ponuđaču — bez posrednika i izgubljenog vremena.
+                </p>
+              </div>
+
+              <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-white text-2xl font-black text-slate-950 shadow-xl md:flex">
+                ✓
+              </div>
+            </div>
           </div>
         </div>
-
-        <div className="space-y-4">
-          <div className="card-art h-44 rounded-[32px] shadow-premium">
-            <div className="flex h-full items-end p-6 text-6xl">🌸</div>
-          </div>
-
-          <div className="card-art h-64 rounded-[32px] shadow-premium">
-            <div className="flex h-full items-end p-6 text-6xl">📸</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute -bottom-6 left-8 rounded-3xl bg-white p-5 shadow-premium">
-        <p className="text-sm font-bold text-slate-500">Kategorije usluga</p>
-        <p className="text-4xl font-black">7+</p>
       </div>
     </div>
   );
@@ -538,9 +600,13 @@ function Section({
   href: string;
   services: Service[];
 }) {
-  const data = services.filter(
-    (service) => getCategorySlugFromService(service) === categorySlug
-  );
+  const data = services.filter((service) => {
+    return (
+      service.status === "approved" &&
+      service.is_featured === true &&
+      getCategorySlugFromService(service) === categorySlug
+    );
+  });
 
   if (!data.length) return null;
 
@@ -585,11 +651,18 @@ export default function Page() {
       try {
         setLoadingFeatured(true);
 
-        const response = await fetch("/api/home/featured");
+        const response = await fetch(`/api/home/featured?ts=${Date.now()}`, {
+          cache: "no-store",
+        });
+
         const result = await response.json();
 
         if (result.success) {
-          setFeaturedServices(result.data || []);
+          const cleanFeatured = (result.data || []).filter((service: Service) => {
+            return service.status === "approved" && service.is_featured === true;
+          });
+
+          setFeaturedServices(cleanFeatured);
         } else {
           setFeaturedServices([]);
         }
@@ -639,31 +712,32 @@ export default function Page() {
       )}
 
       <section className="relative bg-[radial-gradient(circle_at_top_left,#ffe4e6,transparent_34%),radial-gradient(circle_at_top_right,#fed7aa,transparent_30%),linear-gradient(180deg,#fff,#f8fafc)]">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 md:py-16 lg:grid-cols-[1.05fr_.95fr]">
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-8 md:py-10 lg:grid-cols-[1.05fr_.85fr]">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-rose-600 shadow-sm ring-1 ring-rose-100">
               ✨ Sve za event na jednom mestu
             </div>
 
-            <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-tight text-slate-950 md:text-6xl lg:text-7xl">
+            <h1 className="mt-5 max-w-4xl text-4xl font-black tracking-tight text-slate-950 md:text-5xl lg:text-[58px] lg:leading-[0.98]">
               Rezerviši event usluge brzo, moderno i bez haosa.
             </h1>
 
-            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
-              Prostori, muzika, dekoracije, efekti, foto & video i ulepšavanje
-              za svadbe, rođendane, klubove i privatne događaje.
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 md:text-[17px]">
+              Prostori, muzika, dekoracije, efekti, foto & video i ulepšavanje za
+              svadbe, rođendane, klubove i privatne događaje — bez beskonačnog
+              traganja po Instagramu, YouTube-u, Google-u i drugim platformama.
             </p>
 
             <div
               ref={filterRef}
-              className={`mt-8 transition-opacity duration-200 ${
+              className={`mt-7 transition-opacity duration-200 ${
                 filterFixed ? "opacity-0" : "opacity-100"
               }`}
             >
               <SearchBar />
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3 text-sm font-bold text-slate-500">
+            <div className="mt-5 flex flex-wrap gap-3 text-sm font-bold text-slate-500">
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
                 ✓ Provereni ponuđači
               </span>

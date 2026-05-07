@@ -4,17 +4,6 @@ import { useMemo, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import SiteHeader from "../../components/Header";
 
-const navTabs = [
-  "HOME",
-  "PROSTORI",
-  "MUZIKA",
-  "DEKORACIJE",
-  "EFEKTI & RASVETA",
-  "FOTO & VIDEO",
-  "ULEPŠAVANJE",
-  "OSTALE USLUGE",
-];
-
 const categories = [
   "Prostori (svadbeni saloni, restorani, vile, sale, klubovi, hoteli)",
   "Muzika (bendovi, solo izvođači, DJ, trubači, tamburaši)",
@@ -41,30 +30,6 @@ const locationData: Record<string, Record<string, string[]>> = {
   },
 };
 
-function Header() {
-  return (
-    <header className="border-b border-slate-100 bg-white">
-      <div className="mx-auto flex max-w-[1320px] items-center justify-between px-4 py-4">
-        <a href="/" className="text-2xl font-black tracking-tight text-slate-950">
-          Rezervisi<span className="text-rose-600">.to</span>
-        </a>
-
-        <nav className="hidden items-center gap-2 xl:flex">
-          {navTabs.map((tab) => (
-            <a
-              key={tab}
-              href={tab === "HOME" ? "/" : `/${tab.toLowerCase().replaceAll(" ", "-")}`}
-              className="rounded-full px-4 py-2 text-xs font-black text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"
-            >
-              {tab}
-            </a>
-          ))}
-        </nav>
-      </div>
-    </header>
-  );
-}
-
 function Field({
   label,
   required,
@@ -84,7 +49,11 @@ function Field({
 
       {children}
 
-      {hint && <span className="mt-2 block text-xs leading-5 text-slate-500">{hint}</span>}
+      {hint && (
+        <span className="mt-2 block text-xs leading-5 text-slate-500">
+          {hint}
+        </span>
+      )}
     </label>
   );
 }
@@ -230,6 +199,9 @@ export default function AddServicePage() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [files, setFiles] = useState<File[]>([]);
 
+  // Honeypot anti-bot polje — pravi korisnik ga ne vidi.
+  const [companyWebsite, setCompanyWebsite] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -280,6 +252,14 @@ export default function AddServicePage() {
     e.preventDefault();
 
     setMessage(null);
+
+    // Ako je ovo popunjeno, skoro sigurno je bot.
+    if (companyWebsite.trim()) {
+      return setMessage({
+        type: "error",
+        text: "Zahtev nije validan.",
+      });
+    }
 
     const normalizedInstagram = normalizeInstagram(contactInstagram);
 
@@ -346,9 +326,7 @@ export default function AddServicePage() {
         country: countries.join(", "),
         region: regions.join(", "),
         city: cities.join(", "),
-        coverage_area: [...countries, ...regions, ...cities]
-            .filter(Boolean)
-            .join(", "),
+        coverage_area: [...countries, ...regions, ...cities].filter(Boolean).join(", "),
 
         price_type: priceMode === "agreement" ? "agreement" : "fixed",
         price_from: priceMode === "agreement" ? null : Number(priceFrom),
@@ -363,6 +341,9 @@ export default function AddServicePage() {
         contact_instagram: normalizedInstagram || null,
         contact_facebook: contactFacebook.trim() || null,
         contact_website: contactWebsite.trim() || null,
+
+        // Honeypot šaljemo i backendu, jer frontend zaštita sama nije dovoljna.
+        company_website: companyWebsite,
 
         status: "pending",
       };
@@ -404,12 +385,16 @@ export default function AddServicePage() {
         for (const file of files) {
           const path = await uploadFile(data.id, file, "gallery");
 
-          await supabase.from("service_media").insert({
+          const { error: mediaError } = await supabase.from("service_media").insert({
             service_id: data.id,
             file_path: path,
             file_type: file.type,
             file_name: file.name,
           });
+
+          if (mediaError) {
+            throw mediaError;
+          }
         }
       }
 
@@ -436,6 +421,7 @@ export default function AddServicePage() {
       setContactWebsite("");
       setCoverFile(null);
       setFiles([]);
+      setCompanyWebsite("");
     } catch (err: any) {
       setMessage({
         type: "error",
@@ -453,8 +439,26 @@ export default function AddServicePage() {
       <section className="mx-auto grid max-w-[1320px] gap-8 px-4 py-10 lg:grid-cols-[1fr_360px]">
         <form
           onSubmit={handleSubmit}
-          className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm md:p-8"
+          className="relative rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm md:p-8"
         >
+          {/* Honeypot field — sakriveno za ljude, vidljivo botovima koji čitaju HTML */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-[-9999px] top-auto h-px w-px overflow-hidden opacity-0"
+          >
+            <label>
+              Company website
+              <input
+                type="text"
+                name="company_website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={companyWebsite}
+                onChange={(e) => setCompanyWebsite(e.target.value)}
+              />
+            </label>
+          </div>
+
           <p className="text-xs font-black uppercase tracking-[0.25em] text-rose-600">
             Novi listing
           </p>
@@ -757,7 +761,7 @@ export default function AddServicePage() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-2xl bg-rose-600 px-8 py-4 text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700 disabled:opacity-60"
+              className="rounded-2xl bg-rose-600 px-8 py-4 text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Kreiranje..." : "Kreiraj uslugu"}
             </button>
@@ -780,7 +784,9 @@ export default function AddServicePage() {
           <div className="mt-5 rounded-2xl bg-slate-50 p-4">
             <p className="text-xs font-black uppercase text-slate-400">Cena</p>
             <p className="mt-1 text-2xl font-black text-slate-950">
-              {priceMode === "agreement" ? "Po dogovoru" : `${priceFrom || "0"} ${currency}`}
+              {priceMode === "agreement"
+                ? "Po dogovoru"
+                : `${priceFrom || "0"} ${currency}`}
             </p>
           </div>
 
