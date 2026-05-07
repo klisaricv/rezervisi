@@ -1,0 +1,113 @@
+"use client";
+
+import { useState } from "react";
+import { supabase } from "../../lib/supabaseClient";
+import SiteHeader from "../../components/Header";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+
+    setLoading(true);
+    setMessage("");
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    if (token) {
+      const response = await fetch("/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.isAdmin) {
+        window.location.href = "/admin";
+        return;
+      }
+    }
+
+    window.location.href = "/";
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50">
+      <SiteHeader />
+
+      <section className="mx-auto max-w-md px-4 py-14">
+        <form
+          onSubmit={handleLogin}
+          className="rounded-[32px] border border-slate-200 bg-white p-7 shadow-[0_20px_70px_rgba(15,23,42,0.08)]"
+        >
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-rose-600">
+            Prijava
+          </p>
+
+          <h1 className="mt-3 text-3xl font-black text-slate-950">
+            Login
+          </h1>
+
+          <div className="mt-7 grid gap-4">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold outline-none focus:border-rose-400"
+            />
+
+            <input
+              type="password"
+              placeholder="Lozinka"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold outline-none focus:border-rose-400"
+            />
+
+            {message && (
+              <div className="rounded-2xl bg-rose-50 p-4 text-sm font-bold text-rose-700">
+                {message}
+              </div>
+            )}
+
+            <button
+              disabled={loading}
+              className="rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black uppercase text-white transition hover:bg-rose-600 disabled:opacity-60"
+            >
+              {loading ? "Prijava..." : "Prijavi se"}
+            </button>
+          </div>
+
+          <div className="mt-6 flex justify-between text-sm font-bold">
+            <a href="/register" className="text-slate-600 hover:text-rose-600">
+              Registracija
+            </a>
+
+            <a href="/forgot-password" className="text-slate-600 hover:text-rose-600">
+              Zaboravljena lozinka?
+            </a>
+          </div>
+        </form>
+      </section>
+    </main>
+  );
+}

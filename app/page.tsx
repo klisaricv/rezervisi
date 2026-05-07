@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import SiteHeader from "../components/Header";
+import { supabase } from "../lib/supabaseClient";
 
 const categoryOptions = [
   "Prostori",
@@ -29,137 +30,57 @@ const locationData: Record<string, Record<string, string[]>> = {
   },
 };
 
-const items = [
-  {
-    title: "Villa Prestige",
-    description: "Luksuzna sala za svadbe i proslave, kapacitet do 300 gostiju.",
-    location: "Bijeljina",
-    price: "od 1.200€",
-    category: "Prostori",
-    badge: "Top izbor",
-    emoji: "🏛️",
-    gradient: ["#fb7185", "#f97316"],
-  },
-  {
-    title: "Grand Event Hall",
-    description: "Moderan prostor za venčanja, rođendane i korporativne evente.",
-    location: "Beograd",
-    price: "od 1.800€",
-    category: "Prostori",
-    badge: "Premium",
-    emoji: "🥂",
-    gradient: ["#8b5cf6", "#ec4899"],
-  },
-  {
-    title: "Royal Bend",
-    description: "Bend od 6 članova za svadbe, klubove i privatne proslave.",
-    location: "Cela Srbija",
-    price: "od 900€",
-    category: "Muzika",
-    badge: "Popularno",
-    emoji: "🎤",
-    gradient: ["#0ea5e9", "#6366f1"],
-  },
-  {
-    title: "DJ Marko Live",
-    description: "DJ, sax live performance i kompletna ozvučenja za evente.",
-    location: "Novi Sad",
-    price: "od 350€",
-    category: "Muzika",
-    badge: "Novo",
-    emoji: "🎧",
-    gradient: ["#06b6d4", "#14b8a6"],
-  },
-  {
-    title: "Bloom Dekor",
-    description: "Cvetni aranžmani, mladenački sto i kompletna dekoracija sale.",
-    location: "Novi Sad",
-    price: "od 500€",
-    category: "Dekoracije",
-    badge: "Elegantno",
-    emoji: "🌸",
-    gradient: ["#f43f5e", "#d946ef"],
-  },
-  {
-    title: "Luxury Floral Studio",
-    description: "Premium dekoracija za svadbe, rođendane i gala večeri.",
-    location: "Sarajevo",
-    price: "Po dogovoru",
-    category: "Dekoracije",
-    badge: "Premium",
-    emoji: "💐",
-    gradient: ["#ec4899", "#f59e0b"],
-  },
-  {
-    title: "LightPro FX",
-    description: "Rasveta, dim, konfete, led ekrani i scenski efekti.",
-    location: "Banja Luka",
-    price: "od 450€",
-    category: "Efekti & Rasveta",
-    badge: "Show",
-    emoji: "💡",
-    gradient: ["#facc15", "#f97316"],
-  },
-  {
-    title: "Club Visuals",
-    description: "Efekti za klubove, bine, koncertne događaje i velike sale.",
-    location: "Beograd",
-    price: "od 650€",
-    category: "Efekti & Rasveta",
-    badge: "Pro",
-    emoji: "🎆",
-    gradient: ["#22c55e", "#0ea5e9"],
-  },
-  {
-    title: "Studio Moment",
-    description: "Foto i video snimanje, dron, highlight film i kompletna obrada.",
-    location: "Beograd",
-    price: "od 750€",
-    category: "Foto & Video",
-    badge: "4K",
-    emoji: "📸",
-    gradient: ["#334155", "#64748b"],
-  },
-  {
-    title: "FrameHouse Weddings",
-    description: "Filmski wedding video, fotografisanje i albumi premium kvaliteta.",
-    location: "Tuzla",
-    price: "od 1.000€",
-    category: "Foto & Video",
-    badge: "Cinema",
-    emoji: "🎬",
-    gradient: ["#7c3aed", "#2563eb"],
-  },
-  {
-    title: "Glam Studio Ana",
-    description: "Profesionalno šminkanje i frizura za mlade i goste.",
-    location: "Bijeljina",
-    price: "od 80€",
-    category: "Ulepšavanje",
-    badge: "Beauty",
-    emoji: "💄",
-    gradient: ["#fb7185", "#ec4899"],
-  },
-  {
-    title: "Beauty Team Elite",
-    description: "Mobilni beauty tim za venčanja, rođendane i svečane evente.",
-    location: "Novi Sad",
-    price: "od 150€",
-    category: "Ulepšavanje",
-    badge: "Mobile",
-    emoji: "✨",
-    gradient: ["#a855f7", "#f43f5e"],
-  },
+const sections = [
+  { title: "Istaknuti prostori", categorySlug: "prostori", href: "/prostori" },
+  { title: "Istaknuta muzika", categorySlug: "muzika", href: "/muzika" },
+  { title: "Istaknute dekoracije", categorySlug: "dekoracije", href: "/dekoracije" },
+  { title: "Efekti i rasveta", categorySlug: "efekti-rasveta", href: "/efekti-rasveta" },
+  { title: "Foto & video", categorySlug: "foto-video", href: "/foto-video" },
+  { title: "Ulepšavanje", categorySlug: "ulepsavanje", href: "/ulepsavanje" },
+  { title: "Ostale usluge", categorySlug: "ostale-usluge", href: "/ostale-usluge" },
 ];
 
-const sections = [
-  { title: "Istaknuti prostori", category: "Prostori", href: "/prostori" },
-  { title: "Istaknuta muzika", category: "Muzika", href: "/muzika" },
-  { title: "Istaknute dekoracije", category: "Dekoracije", href: "/dekoracije" },
-  { title: "Efekti i rasveta", category: "Efekti & Rasveta", href: "/efekti-rasveta" },
-  { title: "Foto & video", category: "Foto & Video", href: "/foto-video" },
-  { title: "Ulepšavanje i ostale usluge", category: "Ulepšavanje", href: "/ulepsavanje" },
-];
+const categoryLabels: Record<string, string> = {
+  prostori: "PROSTORI",
+  muzika: "MUZIKA",
+  dekoracije: "DEKORACIJE",
+  "efekti-rasveta": "EFEKTI & RASVETA",
+  "foto-video": "FOTO & VIDEO",
+  ulepsavanje: "ULEPŠAVANJE",
+  "ostale-usluge": "OSTALE USLUGE",
+};
+
+type ServiceMedia = {
+  id: string;
+  file_path: string;
+  file_type: string | null;
+  file_name: string | null;
+  sort_order: number | null;
+  created_at: string;
+};
+
+type Service = {
+  id: string;
+  title: string;
+  category: string;
+  category_slug?: string | null;
+  service_slug?: string | null;
+  description: string;
+  country: string | null;
+  region: string | null;
+  city: string | null;
+  coverage_area: string | null;
+  price_type: string;
+  price_from: number | null;
+  currency: string;
+  cover_image_path?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  contact_instagram?: string | null;
+  contact_facebook?: string | null;
+  contact_website?: string | null;
+  service_media?: ServiceMedia[];
+};
 
 function CompactSelect({
   label,
@@ -332,77 +253,188 @@ function SearchBar() {
   );
 }
 
-function Card({
-  item,
-}: {
-  item: {
-    title: string;
-    description: string;
-    location: string;
-    price: string;
-    category: string;
-    badge: string;
-    emoji: string;
-    gradient: string[];
-  };
-}) {
-  return (
-    <article className="group overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-card transition hover:-translate-y-1 hover:shadow-premium">
-      <div
-        className="card-art relative h-48"
-        style={
-          {
-            "--from": item.gradient[0],
-            "--to": item.gradient[1],
-          } as React.CSSProperties
-        }
-      >
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,.05),rgba(0,0,0,.38))]" />
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "dj")
+    .replace(/Đ/g, "dj")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
-        <div className="absolute left-4 top-4 rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase tracking-wide text-white backdrop-blur">
-          {item.badge}
+function getCategorySlugFromService(service: Service) {
+  if (service.category_slug) return service.category_slug;
+
+  if (service.category.startsWith("Prostori")) return "prostori";
+  if (service.category.startsWith("Muzika")) return "muzika";
+  if (service.category.startsWith("Dekoracije")) return "dekoracije";
+  if (service.category.startsWith("Efekti")) return "efekti-rasveta";
+  if (service.category.startsWith("Foto")) return "foto-video";
+  if (service.category.startsWith("Ulepšavanje")) return "ulepsavanje";
+  if (service.category.startsWith("Ostale")) return "ostale-usluge";
+
+  return "usluge";
+}
+
+function getCategoryLabel(service: Service) {
+  const slug = getCategorySlugFromService(service);
+  return categoryLabels[slug] || service.category;
+}
+
+function cleanLocationText(value: string) {
+  return value
+    .replaceAll("Države:", "")
+    .replaceAll("Drzave:", "")
+    .replaceAll("Regije:", "")
+    .replaceAll("Gradovi:", "")
+    .replaceAll("|", ",")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getLocationLabel(service: Service) {
+  if (service.coverage_area) {
+    const parts = cleanLocationText(service.coverage_area);
+    if (parts.length) return parts.slice(0, 2).join(", ");
+  }
+
+  if (service.city && service.city !== "Nije precizirano") return service.city;
+  if (service.region) return service.region;
+  if (service.country) return service.country;
+
+  return "Lokacija nije precizirana";
+}
+
+function getPublicUrl(path?: string | null) {
+  if (!path) return null;
+
+  const { data } = supabase.storage.from("service-media").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function getCoverImageUrl(service: Service) {
+  const path =
+    service.cover_image_path ||
+    service.service_media?.find((media) => media.file_type?.startsWith("image/"))
+      ?.file_path ||
+    null;
+
+  return getPublicUrl(path);
+}
+
+function priceLabel(service: Service) {
+  if (service.price_type === "agreement" || !service.price_from) {
+    return "Po dogovoru";
+  }
+
+  return `od ${service.price_from} ${service.currency}`;
+}
+
+function FeaturedCard({ service }: { service: Service }) {
+  const coverImageUrl = getCoverImageUrl(service);
+  const detailCategory = getCategorySlugFromService(service);
+  const detailSlug = service.service_slug || slugify(service.title) || service.id;
+
+  const shortDescription =
+    service.description && service.description.length > 115
+      ? `${service.description.slice(0, 115).trim()}...`
+      : service.description || "Opis nije dodat.";
+
+  return (
+    <article className="group overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card transition hover:-translate-y-1 hover:shadow-premium">
+      <div className="relative h-52 overflow-hidden bg-gradient-to-br from-slate-100 via-rose-50 to-orange-50">
+        {coverImageUrl ? (
+          <>
+            <img
+              src={coverImageUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl opacity-35"
+            />
+
+            <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-slate-950/20" />
+
+            <div className="absolute inset-3 rounded-[24px] border border-white/70 bg-white/35 p-2 shadow-[0_12px_40px_rgba(15,23,42,0.10)] backdrop-blur-md">
+              <div className="h-full w-full overflow-hidden rounded-[18px] bg-white/70">
+                <img
+                  src={coverImageUrl}
+                  alt={service.title}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-rose-500 via-orange-500 to-amber-400 text-5xl">
+            ✨
+          </div>
+        )}
+
+        <div className="absolute left-4 top-4 rounded-full bg-slate-950/85 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-white shadow-lg backdrop-blur">
+          Preporučeno
         </div>
 
-        <button className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-2 text-lg shadow-lg">
+        <button className="absolute right-4 top-4 rounded-full bg-white/95 px-3 py-2 text-lg shadow-lg transition hover:bg-rose-600 hover:text-white">
           ♡
         </button>
-
-        <div className="absolute bottom-5 left-5 text-6xl drop-shadow-xl">
-          {item.emoji}
-        </div>
       </div>
 
       <div className="p-5">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-600">
-            {item.category}
+          <span className="rounded-full bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-600">
+            {getCategoryLabel(service)}
           </span>
 
           <span className="text-xs font-bold text-slate-400">Verifikovano</span>
         </div>
 
-        <h3 className="text-lg font-black text-slate-950">{item.title}</h3>
+        <h3 className="text-xl font-black tracking-tight text-slate-950">
+          {service.title}
+        </h3>
 
-        <p className="mt-2 min-h-[48px] text-sm leading-6 text-slate-600">
-          {item.description}
+        <p className="mt-3 min-h-[72px] text-sm leading-6 text-slate-600">
+          {shortDescription}
         </p>
 
-        <div className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-500">
-          <span>📍</span> {item.location}
+        <div className="mt-4 flex items-start gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600">
+          <span>📍</span>
+          <span>{getLocationLabel(service)}</span>
         </div>
 
         <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
           <div>
             <p className="text-xs font-black uppercase text-slate-400">Cena</p>
-            <p className="text-xl font-black text-slate-950">{item.price}</p>
+            <p className="text-xl font-black text-slate-950">{priceLabel(service)}</p>
           </div>
 
-          <button className="rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600">
+          <a
+            href={`/${detailCategory}/${detailSlug}`}
+            className="rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600"
+          >
             Detalji
-          </button>
+          </a>
         </div>
       </div>
     </article>
+  );
+}
+
+function FeaturedCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card">
+      <div className="h-52 animate-pulse bg-slate-100" />
+      <div className="space-y-4 p-5">
+        <div className="flex justify-between">
+          <div className="h-8 w-28 animate-pulse rounded-full bg-slate-100" />
+          <div className="h-5 w-20 animate-pulse rounded-full bg-slate-100" />
+        </div>
+        <div className="h-7 w-3/4 animate-pulse rounded-xl bg-slate-100" />
+        <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
+        <div className="h-14 animate-pulse rounded-2xl bg-slate-100" />
+      </div>
+    </div>
   );
 }
 
@@ -411,61 +443,29 @@ function HeroVisual() {
     <div className="relative hidden lg:block">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-4 pt-16">
-          <div
-            className="card-art h-56 rounded-[32px] shadow-premium"
-            style={
-              {
-                "--from": "#fb7185",
-                "--to": "#f97316",
-              } as React.CSSProperties
-            }
-          >
+          <div className="card-art h-56 rounded-[32px] shadow-premium">
             <div className="flex h-full items-end p-6 text-6xl">🏛️</div>
           </div>
 
-          <div
-            className="card-art h-44 rounded-[32px] shadow-premium"
-            style={
-              {
-                "--from": "#0ea5e9",
-                "--to": "#6366f1",
-              } as React.CSSProperties
-            }
-          >
+          <div className="card-art h-44 rounded-[32px] shadow-premium">
             <div className="flex h-full items-end p-6 text-6xl">🎤</div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <div
-            className="card-art h-44 rounded-[32px] shadow-premium"
-            style={
-              {
-                "--from": "#f43f5e",
-                "--to": "#d946ef",
-              } as React.CSSProperties
-            }
-          >
+          <div className="card-art h-44 rounded-[32px] shadow-premium">
             <div className="flex h-full items-end p-6 text-6xl">🌸</div>
           </div>
 
-          <div
-            className="card-art h-64 rounded-[32px] shadow-premium"
-            style={
-              {
-                "--from": "#334155",
-                "--to": "#64748b",
-              } as React.CSSProperties
-            }
-          >
+          <div className="card-art h-64 rounded-[32px] shadow-premium">
             <div className="flex h-full items-end p-6 text-6xl">📸</div>
           </div>
         </div>
       </div>
 
       <div className="absolute -bottom-6 left-8 rounded-3xl bg-white p-5 shadow-premium">
-        <p className="text-sm font-bold text-slate-500">Aktivnih ponuđača</p>
-        <p className="text-4xl font-black">1.250+</p>
+        <p className="text-sm font-bold text-slate-500">Kategorije usluga</p>
+        <p className="text-4xl font-black">7+</p>
       </div>
     </div>
   );
@@ -473,14 +473,18 @@ function HeroVisual() {
 
 function Section({
   title,
-  category,
+  categorySlug,
   href,
+  services,
 }: {
   title: string;
-  category: string;
+  categorySlug: string;
   href: string;
+  services: Service[];
 }) {
-  const data = items.filter((item) => item.category === category);
+  const data = services.filter((service) => service.category_slug === categorySlug);
+
+  if (!data.length) return null;
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10">
@@ -504,8 +508,8 @@ function Section({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {(data.length ? data : items.slice(0, 4)).map((item) => (
-          <Card key={`${title}-${item.title}`} item={item} />
+        {data.slice(0, 4).map((service) => (
+          <FeaturedCard key={service.id} service={service} />
         ))}
       </div>
     </section>
@@ -515,13 +519,37 @@ function Section({
 export default function Page() {
   const filterRef = useRef<HTMLDivElement | null>(null);
   const [filterFixed, setFilterFixed] = useState(false);
+  const [featuredServices, setFeaturedServices] = useState<Service[]>([]);
+  const [loadingFeatured, setLoadingFeatured] = useState(true);
+
+  useEffect(() => {
+    async function loadFeaturedServices() {
+      try {
+        setLoadingFeatured(true);
+
+        const response = await fetch("/api/home/featured");
+        const result = await response.json();
+
+        if (result.success) {
+          setFeaturedServices(result.data || []);
+        } else {
+          setFeaturedServices([]);
+        }
+      } catch {
+        setFeaturedServices([]);
+      } finally {
+        setLoadingFeatured(false);
+      }
+    }
+
+    loadFeaturedServices();
+  }, []);
 
   useEffect(() => {
     function handleScroll() {
       if (!filterRef.current) return;
 
       const rect = filterRef.current.getBoundingClientRect();
-
       const headerOffset = window.innerWidth >= 1280 ? 125 : 84;
 
       setFilterFixed(rect.top <= headerOffset);
@@ -537,6 +565,8 @@ export default function Page() {
       window.removeEventListener("resize", handleScroll);
     };
   }, []);
+
+  const hasFeatured = featuredServices.length > 0;
 
   return (
     <main className="min-h-screen">
@@ -583,7 +613,7 @@ export default function Page() {
                 ✓ Srbija, BiH, dijaspora
               </span>
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                ✓ Cene odmah vidljive
+                ✓ Direktan kontakt
               </span>
             </div>
           </div>
@@ -592,14 +622,54 @@ export default function Page() {
         </div>
       </section>
 
-      {sections.map((section) => (
-        <Section
-          key={section.title}
-          title={section.title}
-          category={section.category}
-          href={section.href}
-        />
-      ))}
+      {loadingFeatured ? (
+        <section className="mx-auto max-w-7xl px-4 py-10">
+          <div className="mb-6">
+            <div className="h-5 w-32 animate-pulse rounded-full bg-slate-100" />
+            <div className="mt-3 h-10 w-80 max-w-full animate-pulse rounded-2xl bg-slate-100" />
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <FeaturedCardSkeleton key={item} />
+            ))}
+          </div>
+        </section>
+      ) : hasFeatured ? (
+        sections.map((section) => (
+          <Section
+            key={section.title}
+            title={section.title}
+            categorySlug={section.categorySlug}
+            href={section.href}
+            services={featuredServices}
+          />
+        ))
+      ) : (
+        <section className="mx-auto max-w-7xl px-4 py-14">
+          <div className="rounded-[34px] border border-dashed border-slate-200 bg-white p-10 text-center shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-600">
+              Preporučeno
+            </p>
+
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+              Još nema preporučenih usluga
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-500">
+              Kada admin odobri usluge i označi ih kao preporučene, ovdje će se
+              automatski prikazati prava ponuda iz baze.
+            </p>
+
+            <a
+              href="/dodaj-uslugu"
+              className="mt-6 inline-flex rounded-full bg-slate-950 px-7 py-4 text-sm font-black text-white transition hover:bg-rose-600"
+            >
+              Dodaj uslugu
+            </a>
+          </div>
+        </section>
+      )}
 
       <section className="mx-auto max-w-7xl px-4 py-14">
         <div className="overflow-hidden rounded-[36px] bg-slate-950 p-8 text-white shadow-premium md:p-12">
