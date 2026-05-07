@@ -1,17 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-
-const navTabs = [
-  { label: "HOME", href: "/" },
-  { label: "PROSTORI", href: "/prostori" },
-  { label: "MUZIKA", href: "/muzika" },
-  { label: "DEKORACIJE", href: "/dekoracije" },
-  { label: "EFEKTI & RASVETA", href: "/efekti-rasveta" },
-  { label: "FOTO & VIDEO", href: "/foto-video" },
-  { label: "ULEPŠAVANJE", href: "/ulepsavanje" },
-  { label: "OSTALE USLUGE", href: "/ostale-usluge" },
-];
+import { supabase } from "../lib/supabaseClient";
+import SiteHeader from "./Header";
 
 const locationData: Record<string, Record<string, string[]>> = {
   "Bosna i Hercegovina": {
@@ -29,107 +20,46 @@ const locationData: Record<string, Record<string, string[]>> = {
   },
 };
 
+const categoryLabels: Record<string, string> = {
+  prostori: "PROSTORI",
+  muzika: "MUZIKA",
+  dekoracije: "DEKORACIJE",
+  "efekti-rasveta": "EFEKTI & RASVETA",
+  "foto-video": "FOTO & VIDEO",
+  ulepsavanje: "ULEPŠAVANJE",
+  "ostale-usluge": "OSTALE USLUGE",
+};
+
+type ServiceMedia = {
+  id: string;
+  file_path: string;
+  file_type: string | null;
+  file_name: string | null;
+  sort_order: number | null;
+  created_at: string;
+};
+
 type Service = {
   id: string;
   title: string;
   category: string;
+  category_slug?: string | null;
   description: string;
-  country: string;
+  country: string | null;
   region: string | null;
-  city: string;
+  city: string | null;
   coverage_area: string | null;
   price_type: string;
   price_from: number | null;
   currency: string;
+  cover_image_path?: string | null;
   contact_phone?: string | null;
   contact_email?: string | null;
   contact_instagram?: string | null;
   contact_facebook?: string | null;
   contact_website?: string | null;
+  service_media?: ServiceMedia[];
 };
-
-function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  return (
-    <>
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xl font-black text-slate-900 xl:hidden"
-          >
-            ☰
-          </button>
-
-          <a href="/" className="shrink-0 text-2xl font-black tracking-tight">
-            Rezervisi<span className="text-rose-600">.to</span>
-          </a>
-
-          <a
-            href="/dodaj-uslugu"
-            className="shrink-0 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600"
-          >
-            Dodaj uslugu
-          </a>
-        </div>
-
-        <div className="hidden border-t border-slate-100 px-4 pb-3 xl:block">
-          <nav className="no-scrollbar mx-auto flex max-w-7xl items-center justify-center gap-2 overflow-x-auto rounded-full bg-slate-100 p-1">
-            {navTabs.map((tab) => (
-              <a
-                key={tab.label}
-                href={tab.href}
-                className="shrink-0 rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wide text-slate-600 transition hover:bg-white hover:text-rose-600 hover:shadow-sm"
-              >
-                {tab.label}
-              </a>
-            ))}
-          </nav>
-        </div>
-      </header>
-
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] xl:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(false)}
-            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
-          />
-
-          <aside className="absolute left-0 top-0 h-full w-[82%] max-w-sm bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <a href="/" className="text-2xl font-black tracking-tight">
-                Rezervisi<span className="text-rose-600">.to</span>
-              </a>
-
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg font-black text-slate-700"
-              >
-                ×
-              </button>
-            </div>
-
-            <nav className="flex flex-col gap-2 p-5">
-              {navTabs.map((tab) => (
-                <a
-                  key={tab.label}
-                  href={tab.href}
-                  className="rounded-2xl bg-slate-50 px-4 py-4 text-sm font-black uppercase tracking-wide text-slate-700 transition hover:bg-rose-50 hover:text-rose-600"
-                >
-                  {tab.label}
-                </a>
-              ))}
-            </nav>
-          </aside>
-        </div>
-      )}
-    </>
-  );
-}
 
 function FilterSelect({
   label,
@@ -151,141 +81,45 @@ function FilterSelect({
   function toggle(value: string) {
     setSelected(
       selected.includes(value)
-        ? selected.filter((x) => x !== value)
+        ? selected.filter((item) => item !== value)
         : [...selected, value]
     );
   }
 
   return (
-    <div className="relative min-w-0 flex-1">
+    <div className="relative">
       <button
-        type="button"
         disabled={disabled}
+        type="button"
         onClick={() => setOpen(!open)}
-        className="flex h-12 w-full items-center justify-between border-r border-slate-100 px-4 text-left disabled:opacity-40"
+        className="flex h-16 w-full items-center justify-between border-r border-slate-100 px-4 text-left transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+        <span>
+          <span className="block text-[10px] font-black uppercase tracking-widest text-slate-300">
             {label}
-          </p>
-          <p className="truncate text-sm font-black text-slate-950">
+          </span>
+          <span className="mt-1 block text-sm font-black text-slate-950">
             {selected.length ? `${selected.length} izabrano` : placeholder}
-          </p>
-        </div>
-
-        <span className="ml-2 text-slate-400">⌄</span>
+          </span>
+        </span>
+        <span className="text-slate-300">⌄</span>
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-14 z-50 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-          <div className="max-h-56 overflow-y-auto">
-            {options.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => toggle(option)}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold hover:bg-slate-50"
-              >
-                <span>{option}</span>
-                {selected.includes(option) && (
-                  <span className="text-rose-600">✓</span>
-                )}
-              </button>
-            ))}
-          </div>
+        <div className="absolute left-0 top-full z-30 mt-2 max-h-72 w-full overflow-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-xl">
+          {options.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => toggle(option)}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"
+            >
+              {option}
+              {selected.includes(option) && <span className="text-rose-600">✓</span>}
+            </button>
+          ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function FilterBar() {
-  const [countries, setCountries] = useState<string[]>([]);
-  const [regions, setRegions] = useState<string[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
-
-  const regionOptions = useMemo(() => {
-    return countries.flatMap((country) =>
-      Object.keys(locationData[country] || {})
-    );
-  }, [countries]);
-
-  const cityOptions = useMemo(() => {
-    if (!countries.length) return [];
-
-    const result: string[] = [];
-
-    countries.forEach((country) => {
-      const countryRegions = locationData[country] || {};
-      const activeRegions = regions.length
-        ? regions
-        : Object.keys(countryRegions);
-
-      activeRegions.forEach((region) => {
-        result.push(...(countryRegions[region] || []));
-      });
-    });
-
-    return Array.from(new Set(result));
-  }, [countries, regions]);
-
-  return (
-    <div className="sticky top-[84px] z-40 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-xl xl:top-[125px]">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col overflow-visible rounded-3xl border border-slate-200 bg-white shadow-sm md:flex-row md:items-center">
-          <FilterSelect
-            label="Država"
-            placeholder="Sve države"
-            options={Object.keys(locationData)}
-            selected={countries}
-            setSelected={(values) => {
-              setCountries(values);
-              setRegions([]);
-              setCities([]);
-            }}
-          />
-
-          <FilterSelect
-            label="Regija"
-            placeholder="Sve regije"
-            options={regionOptions}
-            selected={regions}
-            disabled={!countries.length}
-            setSelected={(values) => {
-              setRegions(values);
-              setCities([]);
-            }}
-          />
-
-          <FilterSelect
-            label="Grad"
-            placeholder="Svi gradovi"
-            options={cityOptions}
-            selected={cities}
-            disabled={!countries.length}
-            setSelected={setCities}
-          />
-
-          <div className="p-2 md:w-[160px]">
-            <button className="h-12 w-full rounded-2xl bg-rose-600 px-5 text-sm font-black text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700">
-              Filtriraj
-            </button>
-          </div>
-        </div>
-
-        {(countries.length > 0 || regions.length > 0 || cities.length > 0) && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {[...countries, ...regions, ...cities].map((item) => (
-              <span
-                key={item}
-                className="rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-700"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -299,64 +133,192 @@ function getContact(service: Service) {
   return "Kontakt nije unet";
 }
 
-function priceLabel(service: Service) {
-  if (service.price_type === "agreement" || !service.price_from) {
-    return "Po dogovoru";
+function getCategoryLabel(service: Service) {
+  if (service.category_slug && categoryLabels[service.category_slug]) {
+    return categoryLabels[service.category_slug];
   }
 
-  return `od ${service.price_from} ${service.currency}`;
+  if (service.category.startsWith("Prostori")) return "PROSTORI";
+  if (service.category.startsWith("Muzika")) return "MUZIKA";
+  if (service.category.startsWith("Dekoracije")) return "DEKORACIJE";
+  if (service.category.startsWith("Efekti")) return "EFEKTI & RASVETA";
+  if (service.category.startsWith("Foto")) return "FOTO & VIDEO";
+  if (service.category.startsWith("Ulepšavanje")) return "ULEPŠAVANJE";
+  if (service.category.startsWith("Ostale")) return "OSTALE USLUGE";
+
+  return service.category;
+}
+
+function cleanLocationText(value: string) {
+  return value
+    .replaceAll("Države:", "")
+    .replaceAll("Drzave:", "")
+    .replaceAll("Regije:", "")
+    .replaceAll("Gradovi:", "")
+    .replaceAll("|", ",")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getLocationParts(service: Service) {
+  if (service.coverage_area) {
+    const cleaned = cleanLocationText(service.coverage_area);
+    if (cleaned.length) return cleaned;
+  }
+
+  const fallback = [service.city, service.region, service.country]
+    .filter(Boolean)
+    .filter((item) => item !== "Nije precizirano") as string[];
+
+  if (fallback.length) return fallback;
+
+  return ["Lokacija nije precizirana"];
+}
+
+function getCoverImageUrl(service: Service) {
+  const path =
+    service.cover_image_path ||
+    service.service_media?.find((media) => media.file_type?.startsWith("image/"))
+      ?.file_path ||
+    null;
+
+  if (!path) return null;
+
+  const { data } = supabase.storage.from("service-media").getPublicUrl(path);
+  return data.publicUrl;
 }
 
 function ServiceCard({ service }: { service: Service }) {
-  return (
-    <article className="group overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-card transition hover:-translate-y-1 hover:shadow-premium">
-      <div className="relative h-48 bg-gradient-to-br from-rose-400 to-orange-700">
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,.05),rgba(0,0,0,.38))]" />
+  const coverImageUrl = getCoverImageUrl(service);
+  const locationParts = getLocationParts(service);
+  const visibleLocations = locationParts.slice(0, 4);
+  const extraLocationsCount = Math.max(locationParts.length - 4, 0);
 
-        <div className="absolute left-4 top-4 rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase tracking-wide text-white backdrop-blur">
+  const shortDescription =
+    service.description && service.description.length > 150
+      ? `${service.description.slice(0, 150).trim()}...`
+      : service.description || "Opis nije dodat.";
+
+  return (
+    <article className="group flex h-full flex-col overflow-hidden rounded-[30px] border border-slate-200/70 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_85px_rgba(15,23,42,0.14)]">
+      {/* COVER */}
+      <div className="relative h-[285px] overflow-hidden bg-gradient-to-br from-slate-100 via-rose-50 to-orange-50">
+        {coverImageUrl ? (
+          <>
+            <img
+              src={coverImageUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl opacity-35"
+            />
+
+            <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/5 to-slate-950/5" />
+
+            <div className="absolute inset-x-4 top-4 bottom-4 z-10 rounded-[26px] border border-white/70 bg-white/35 p-3 shadow-[0_12px_40px_rgba(15,23,42,0.10)] backdrop-blur-md">
+              <div className="h-full w-full overflow-hidden rounded-[20px] bg-white/70">
+                <img
+                  src={coverImageUrl}
+                  alt={service.title}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-rose-500 via-orange-500 to-amber-400 text-6xl">
+            🏛️
+          </div>
+        )}
+
+        <div className="absolute left-5 top-5 z-20 rounded-full bg-slate-950/90 px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-white shadow-xl backdrop-blur-md">
           Preporučujemo
         </div>
 
-        <button className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-2 text-lg shadow-lg">
+        <button
+          type="button"
+          className="absolute right-5 top-5 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/95 text-xl text-slate-700 shadow-xl backdrop-blur transition hover:bg-rose-600 hover:text-white"
+          aria-label="Sačuvaj"
+        >
           ♡
         </button>
-
-        <div className="absolute bottom-5 left-5 text-6xl drop-shadow-xl">
-          🏛️
-        </div>
       </div>
 
-      <div className="p-5">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-600">
-            {service.category}
+      {/* CONTENT */}
+      <div className="flex flex-1 flex-col px-6 pb-6 pt-5">
+        {/* BADGES */}
+        <div className="flex items-center justify-between gap-3">
+          <span className="rounded-full bg-rose-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-rose-600">
+            {getCategoryLabel(service)}
           </span>
-          <span className="text-xs font-bold text-slate-400">Verifikovano</span>
+
+          <span className="rounded-full bg-emerald-50 px-3 py-2 text-[11px] font-black text-emerald-700">
+            ✓ Verifikovano
+          </span>
         </div>
 
-        <h3 className="text-lg font-black text-slate-950">{service.title}</h3>
+        {/* TITLE + DESCRIPTION PREMIUM BLOCK */}
+        <div className="mt-5 rounded-[24px] border border-slate-100 bg-gradient-to-br from-white via-slate-50/80 to-white p-5 shadow-sm">
+          <h3 className="text-[27px] font-black leading-[1.08] tracking-tight text-slate-950">
+            {service.title}
+          </h3>
 
-        <p className="mt-2 min-h-[48px] text-sm leading-6 text-slate-600">
-          {service.description || "Opis nije dodat."}
-        </p>
+          <div className="mt-4 h-px w-full bg-gradient-to-r from-rose-200 via-slate-200 to-transparent" />
 
-        <div className="mt-4 text-sm font-bold text-slate-500">
-          📍 {service.city || service.coverage_area || service.country}
+          <p className="mt-4 min-h-[78px] text-[15px] leading-7 text-slate-600">
+            {shortDescription}
+          </p>
         </div>
 
-        <div className="mt-3 text-sm font-bold text-slate-700">
-          ☎ {getContact(service)}
-        </div>
-
-        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-          <div>
-            <p className="text-xs font-black uppercase text-slate-400">Cena</p>
-            <p className="text-xl font-black text-slate-950">
-              {priceLabel(service)}
-            </p>
+        {/* DOSTUPNOST */}
+        <div className="mt-4 rounded-[22px] border border-slate-100 bg-slate-50/80 p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm shadow-sm ring-1 ring-slate-100">
+              📍
+            </span>
+            <span className="text-[12px] font-black uppercase tracking-[0.18em] text-slate-400">
+              Dostupnost
+            </span>
           </div>
 
-          <button className="rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600">
+          <div className="flex flex-wrap gap-2">
+            {visibleLocations.map((item) => (
+              <span
+                key={item}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm"
+              >
+                {item}
+              </span>
+            ))}
+
+            {extraLocationsCount > 0 && (
+              <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 shadow-sm">
+                +{extraLocationsCount}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* KONTAKT */}
+        <div className="mt-4 rounded-[22px] border border-slate-100 bg-slate-50/80 p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm shadow-sm ring-1 ring-slate-100">
+              ☎
+            </span>
+            <span className="text-[12px] font-black uppercase tracking-[0.18em] text-slate-400">
+              Kontakt
+            </span>
+          </div>
+
+          <div className="rounded-[16px] border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <p className="break-words text-[16px] font-black leading-6 text-slate-800">
+              {getContact(service)}
+            </p>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-5">
+          <button className="w-full rounded-[20px] bg-slate-950 px-6 py-4 text-sm font-black uppercase tracking-[0.08em] text-white shadow-lg shadow-slate-950/15 transition hover:bg-rose-600 hover:shadow-rose-600/20">
             Detalji
           </button>
         </div>
@@ -375,63 +337,159 @@ export default function CategoryPage({
   subtitle: string;
 }) {
   const [services, setServices] = useState<Service[]>([]);
+  const [countries, setCountries] = useState<string[]>([]);
+  const [regions, setRegions] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+
+  const regionOptions = useMemo(() => {
+    return countries.flatMap((country) => Object.keys(locationData[country] || {}));
+  }, [countries]);
+
+  const cityOptions = useMemo(() => {
+    if (!countries.length) return [];
+
+    const result: string[] = [];
+
+    countries.forEach((country) => {
+      const countryRegions = locationData[country] || {};
+      const activeRegions = regions.length ? regions : Object.keys(countryRegions);
+
+      activeRegions.forEach((region) => {
+        result.push(...(countryRegions[region] || []));
+      });
+    });
+
+    return Array.from(new Set(result));
+  }, [countries, regions]);
 
   useEffect(() => {
     async function loadServices() {
       const params = new URLSearchParams({
         category,
-        });
+      });
 
-        const response = await fetch(`/api/services?${params.toString()}`);
-        const result = await response.json();
+      const response = await fetch(`/api/services?${params.toString()}`);
+      const result = await response.json();
 
-        if (result.success) {
+      if (result.success) {
         setServices(result.data || []);
-        } else {
+      } else {
         setServices([]);
-        }
+      }
     }
 
     loadServices();
   }, [category]);
 
-  return (
-    <main className="min-h-screen bg-slate-50">
-      <Header />
+  const filteredServices = useMemo(() => {
+    return services.filter((service) => {
+      const locationParts = getLocationParts(service);
 
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 pb-5 pt-9">
-          <div className="max-w-3xl">
-            <p className="w-fit rounded-full bg-rose-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-rose-600">
+      const countryMatch =
+        countries.length === 0 ||
+        countries.some((country) => locationParts.includes(country));
+
+      const regionMatch =
+        regions.length === 0 ||
+        regions.some((region) => locationParts.includes(region));
+
+      const cityMatch =
+        cities.length === 0 ||
+        cities.some((city) => locationParts.includes(city));
+
+      return countryMatch && regionMatch && cityMatch;
+    });
+  }, [services, countries, regions, cities]);
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <SiteHeader />
+
+      <main>
+        <section className="border-b border-slate-200 bg-white">
+          <div className="mx-auto max-w-[1320px] px-4 py-10">
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-rose-600">
               Rezervisi.to
             </p>
-
-            <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+            <h1 className="mt-3 text-4xl font-black text-slate-950 md:text-5xl">
               {title}
             </h1>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500">
               {subtitle}
             </p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <FilterBar />
+        <section className="border-b border-slate-200 bg-white px-4 py-4">
+          <div className="mx-auto grid max-w-[1320px] grid-cols-1 overflow-visible rounded-[26px] border border-slate-100 bg-white shadow-sm md:grid-cols-[1fr_1fr_1fr_150px]">
+            <FilterSelect
+              label="Država"
+              placeholder="Sve države"
+              options={Object.keys(locationData)}
+              selected={countries}
+              setSelected={(values) => {
+                setCountries(values);
+                setRegions([]);
+                setCities([]);
+              }}
+            />
 
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        {services.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-4 text-sm text-slate-500">
-            Još nema odobrenih usluga u ovoj kategoriji.
+            <FilterSelect
+              label="Regija"
+              placeholder="Sve regije"
+              options={regionOptions}
+              selected={regions}
+              setSelected={(values) => {
+                setRegions(values);
+                setCities([]);
+              }}
+              disabled={!countries.length}
+            />
+
+            <FilterSelect
+              label="Grad"
+              placeholder="Svi gradovi"
+              options={cityOptions}
+              selected={cities}
+              setSelected={setCities}
+              disabled={!countries.length}
+            />
+
+            <button className="m-2 rounded-2xl bg-rose-600 px-6 py-4 text-sm font-black text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700">
+              Filtriraj
+            </button>
           </div>
-        ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {services.map((service) => (
-              <ServiceCard key={service.id} service={service} />
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
+
+          {(countries.length > 0 || regions.length > 0 || cities.length > 0) && (
+            <div className="mx-auto flex max-w-[1320px] flex-wrap gap-2 px-1 pt-4">
+              {[...countries, ...regions, ...cities].map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-600"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="mx-auto max-w-[1320px] px-4 py-10">
+          {filteredServices.length === 0 ? (
+            <div className="rounded-[28px] border border-dashed border-slate-200 bg-white p-10 text-center">
+              <p className="text-lg font-black text-slate-950">
+                Još nema odobrenih usluga u ovoj kategoriji.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+              {filteredServices.map((service) => (
+                <ServiceCard key={service.id} service={service} />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
   );
 }

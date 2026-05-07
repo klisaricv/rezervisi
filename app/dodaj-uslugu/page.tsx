@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import SiteHeader from "../../components/Header";
 
 const navTabs = [
   "HOME",
@@ -42,25 +43,23 @@ const locationData: Record<string, Record<string, string[]>> = {
 
 function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-        <a href="/" className="text-2xl font-black tracking-tight">
+    <header className="border-b border-slate-100 bg-white">
+      <div className="mx-auto flex max-w-[1320px] items-center justify-between px-4 py-4">
+        <a href="/" className="text-2xl font-black tracking-tight text-slate-950">
           Rezervisi<span className="text-rose-600">.to</span>
         </a>
 
-        <nav className="hidden items-center gap-1 xl:flex">
+        <nav className="hidden items-center gap-2 xl:flex">
           {navTabs.map((tab) => (
             <a
               key={tab}
-              href="/"
-              className="rounded-full px-4 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100 hover:text-rose-600"
+              href={tab === "HOME" ? "/" : `/${tab.toLowerCase().replaceAll(" ", "-")}`}
+              className="rounded-full px-4 py-2 text-xs font-black text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"
             >
               {tab}
             </a>
           ))}
         </nav>
-
-        <div className="w-[118px]" />
       </div>
     </header>
   );
@@ -78,15 +77,15 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-black text-slate-900">
+    <label className="block">
+      <span className="mb-2 block text-sm font-black text-slate-800">
         {label} {required && <span className="text-rose-600">*</span>}
-      </label>
+      </span>
 
       {children}
 
-      {hint && <p className="mt-2 text-xs leading-5 text-slate-500">{hint}</p>}
-    </div>
+      {hint && <span className="mt-2 block text-xs leading-5 text-slate-500">{hint}</span>}
+    </label>
   );
 }
 
@@ -137,9 +136,7 @@ function SearchableMultiSelect({
 
   return (
     <div className="relative">
-      <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">
-        {label}
-      </p>
+      <p className="mb-2 text-sm font-black text-slate-800">{label}</p>
 
       <button
         type="button"
@@ -147,10 +144,8 @@ function SearchableMultiSelect({
         onClick={() => setOpen(!open)}
         className="flex min-h-[48px] w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-bold outline-none transition hover:border-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <span className={selected.length ? "text-slate-900" : "text-slate-400"}>
-          {selected.length ? `${selected.length} izabrano` : placeholder}
-        </span>
-        <span className="text-slate-400">⌄</span>
+        <span>{selected.length ? `${selected.length} izabrano` : placeholder}</span>
+        <span>⌄</span>
       </button>
 
       {selected.length > 0 && (
@@ -169,7 +164,7 @@ function SearchableMultiSelect({
       )}
 
       {open && !disabled && (
-        <div className="absolute z-50 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+        <div className="absolute z-30 mt-2 w-full rounded-2xl border border-slate-100 bg-white p-3 shadow-xl">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -177,7 +172,7 @@ function SearchableMultiSelect({
             className="mb-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-rose-400"
           />
 
-          <div className="max-h-56 overflow-y-auto">
+          <div className="max-h-60 overflow-auto">
             {filteredOptions.map((option) => (
               <button
                 key={option}
@@ -185,10 +180,8 @@ function SearchableMultiSelect({
                 onClick={() => toggle(option)}
                 className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold hover:bg-slate-50"
               >
-                <span>{option}</span>
-                {selected.includes(option) && (
-                  <span className="text-rose-600">✓</span>
-                )}
+                {option}
+                {selected.includes(option) && <span>✓</span>}
               </button>
             ))}
 
@@ -199,7 +192,7 @@ function SearchableMultiSelect({
                 <button
                   type="button"
                   onClick={addCustom}
-                  className="mt-2 w-full rounded-xl bg-rose-50 px-3 py-2 text-left text-sm font-black text-rose-700"
+                  className="mt-2 w-full rounded-xl bg-slate-950 px-3 py-2 text-left text-sm font-black text-white"
                 >
                   + Dodaj novo: {search.trim()}
                 </button>
@@ -220,9 +213,8 @@ export default function AddServicePage() {
   const [cities, setCities] = useState<string[]>([]);
 
   const [description, setDescription] = useState("");
-  const [priceMode, setPriceMode] = useState<"agreement" | "price">(
-    "agreement"
-  );
+
+  const [priceMode, setPriceMode] = useState<"agreement" | "price">("agreement");
   const [currency, setCurrency] = useState("EUR");
   const [priceFrom, setPriceFrom] = useState("");
 
@@ -235,7 +227,9 @@ export default function AddServicePage() {
   const [contactFacebook, setContactFacebook] = useState("");
   const [contactWebsite, setContactWebsite] = useState("");
 
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -243,9 +237,7 @@ export default function AddServicePage() {
   } | null>(null);
 
   const regionOptions = useMemo(() => {
-    return countries.flatMap((country) =>
-      Object.keys(locationData[country] || {})
-    );
+    return countries.flatMap((country) => Object.keys(locationData[country] || {}));
   }, [countries]);
 
   const cityOptions = useMemo(() => {
@@ -255,9 +247,7 @@ export default function AddServicePage() {
 
     countries.forEach((country) => {
       const countryRegions = locationData[country] || {};
-      const activeRegions = regions.length
-        ? regions
-        : Object.keys(countryRegions);
+      const activeRegions = regions.length ? regions : Object.keys(countryRegions);
 
       activeRegions.forEach((region) => {
         result.push(...(countryRegions[region] || []));
@@ -269,14 +259,26 @@ export default function AddServicePage() {
 
   function normalizeInstagram(value: string) {
     const cleaned = value.trim().replace(/\s/g, "");
-
     if (!cleaned) return "";
-
     return cleaned.startsWith("@") ? cleaned : `@${cleaned}`;
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function uploadFile(serviceId: string, file: File, folder: string) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const path = `${serviceId}/${folder}/${Date.now()}-${safeName}`;
+
+    const { error } = await supabase.storage.from("service-media").upload(path, file);
+
+    if (error) {
+      throw error;
+    }
+
+    return path;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     setMessage(null);
 
     const normalizedInstagram = normalizeInstagram(contactInstagram);
@@ -343,22 +345,16 @@ export default function AddServicePage() {
 
         country: countries.join(", "),
         region: regions.join(", "),
-        city: cities.join(", ") || "Nije precizirano",
-        coverage_area: [
-          countries.length ? `Države: ${countries.join(", ")}` : "",
-          regions.length ? `Regije: ${regions.join(", ")}` : "",
-          cities.length ? `Gradovi: ${cities.join(", ")}` : "",
-        ]
-          .filter(Boolean)
-          .join(" | "),
+        city: cities.join(", "),
+        coverage_area: [...countries, ...regions, ...cities]
+            .filter(Boolean)
+            .join(", "),
 
         price_type: priceMode === "agreement" ? "agreement" : "fixed",
         price_from: priceMode === "agreement" ? null : Number(priceFrom),
         currency,
 
-        availability_type: unavailableDates.length
-          ? "blocked_dates"
-          : "not_set",
+        availability_type: unavailableDates.length ? "blocked_dates" : "not_set",
         unavailable_dates: unavailableDates,
 
         contact_name: "Nije uneto",
@@ -374,36 +370,46 @@ export default function AddServicePage() {
       const response = await fetch("/api/services", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-        });
+      });
 
-        const result = await response.json();
+      const result = await response.json();
 
-        if (!response.ok || !result.success) {
+      if (!response.ok || !result.success) {
         throw new Error(result.error || "Greška pri kreiranju usluge.");
-        }
+      }
 
-        const data = result.data;
+      const data = result.data;
+
+      let coverImagePath: string | null = null;
+
+      if (coverFile && data?.id) {
+        coverImagePath = await uploadFile(data.id, coverFile, "cover");
+
+        const { error: updateCoverError } = await supabase
+          .from("services")
+          .update({
+            cover_image_path: coverImagePath,
+          })
+          .eq("id", data.id);
+
+        if (updateCoverError) {
+          throw updateCoverError;
+        }
+      }
 
       if (files.length && data?.id) {
         for (const file of files) {
-          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-          const path = `${data.id}/${Date.now()}-${safeName}`;
+          const path = await uploadFile(data.id, file, "gallery");
 
-          const { error: uploadError } = await supabase.storage
-            .from("service-media")
-            .upload(path, file);
-
-          if (!uploadError) {
-            await supabase.from("service_media").insert({
-              service_id: data.id,
-              file_path: path,
-              file_type: file.type,
-              file_name: file.name,
-            });
-          }
+          await supabase.from("service_media").insert({
+            service_id: data.id,
+            file_path: path,
+            file_type: file.type,
+            file_name: file.name,
+          });
         }
       }
 
@@ -428,6 +434,7 @@ export default function AddServicePage() {
       setContactInstagram("");
       setContactFacebook("");
       setContactWebsite("");
+      setCoverFile(null);
       setFiles([]);
     } catch (err: any) {
       setMessage({
@@ -441,33 +448,27 @@ export default function AddServicePage() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <Header />
+      <SiteHeader showAddButton={false} />
 
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-5xl px-4 py-10">
-          <div className="flex flex-col gap-3">
-            <span className="w-fit rounded-full bg-rose-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-rose-600">
-              Novi listing
-            </span>
-
-            <h1 className="text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
-              Dodaj uslugu
-            </h1>
-
-            <p className="max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
-              Popuni osnovne podatke. Nakon slanja, usluga ide na proveru i
-              nakon odobrenja se prikazuje u izabranoj kategoriji.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-5xl gap-6 px-4 py-8 lg:grid-cols-[1fr_300px]">
+      <section className="mx-auto grid max-w-[1320px] gap-8 px-4 py-10 lg:grid-cols-[1fr_360px]">
         <form
           onSubmit={handleSubmit}
-          className="rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm md:p-7"
+          className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm md:p-8"
         >
-          <div className="grid gap-6">
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-rose-600">
+            Novi listing
+          </p>
+
+          <h1 className="mt-3 text-4xl font-black text-slate-950">
+            Dodaj uslugu
+          </h1>
+
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            Popuni osnovne podatke. Nakon slanja, usluga ide na proveru i nakon
+            odobrenja se prikazuje u izabranoj kategoriji.
+          </p>
+
+          <div className="mt-8 grid gap-6">
             <Field label="Kategorija" required>
               <select
                 value={category}
@@ -475,6 +476,7 @@ export default function AddServicePage() {
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-rose-400 focus:bg-white"
               >
                 <option value="">Izaberi kategoriju</option>
+
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
@@ -483,7 +485,7 @@ export default function AddServicePage() {
               </select>
             </Field>
 
-            <Field label="Naziv" required hint={`${title.length}/250 karaktera`}>
+            <Field label="Naziv usluge" required>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value.slice(0, 250))}
@@ -492,124 +494,104 @@ export default function AddServicePage() {
               />
             </Field>
 
-            <Field label="Područje dostupnosti" required>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="mb-4 text-xs leading-5 text-slate-500">
-                  Izaberi više država, regija i gradova gde ste dostupni. Ako
-                  opcija ne postoji, pretraži i dodaj novu. Od ovoga zavisi
-                  vidljivost u pretrazi korisnika.
-                </p>
+            <Field
+              label="Dostupnost / Lokacija"
+              required
+              hint="Izaberi više država, regija i gradova gde ste dostupni. Ako opcija ne postoji, pretraži i dodaj novu. Od ovoga zavisi vidljivost u pretrazi korisnika."
+            >
+              <div className="grid gap-3 md:grid-cols-3">
+                <SearchableMultiSelect
+                  label="Države"
+                  placeholder="Izaberi države"
+                  options={Object.keys(locationData)}
+                  selected={countries}
+                  onChange={(values) => {
+                    setCountries(values);
+                    setRegions([]);
+                    setCities([]);
+                  }}
+                />
 
-                <div className="grid gap-4">
-                  <SearchableMultiSelect
-                    label="Država"
-                    placeholder="Izaberi državu"
-                    options={Object.keys(locationData)}
-                    selected={countries}
-                    onChange={(values) => {
-                      setCountries(values);
-                      setRegions([]);
-                      setCities([]);
-                    }}
-                  />
+                <SearchableMultiSelect
+                  label="Regije"
+                  placeholder="Izaberi regije"
+                  options={regionOptions}
+                  selected={regions}
+                  onChange={(values) => {
+                    setRegions(values);
+                    setCities([]);
+                  }}
+                  disabled={!countries.length}
+                />
 
-                  <SearchableMultiSelect
-                    label="Regija"
-                    placeholder="Izaberi regiju"
-                    options={regionOptions}
-                    selected={regions}
-                    disabled={!countries.length}
-                    onChange={(values) => {
-                      setRegions(values);
-                      setCities([]);
-                    }}
-                  />
-
-                  <SearchableMultiSelect
-                    label="Grad"
-                    placeholder="Izaberi grad"
-                    options={cityOptions}
-                    selected={cities}
-                    disabled={!countries.length}
-                    onChange={setCities}
-                  />
-                </div>
+                <SearchableMultiSelect
+                  label="Gradovi"
+                  placeholder="Izaberi gradove"
+                  options={cityOptions}
+                  selected={cities}
+                  onChange={setCities}
+                  disabled={!countries.length}
+                />
               </div>
             </Field>
 
-            <Field
-              label="Dostupnost"
-              hint="Nije obavezno, ali je preporučeno. Najlakše je uneti datume kada ste zauzeti, da korisnici znaju da li je usluga dostupna za njihov termin."
-            >
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-                  <input
-                    type="date"
-                    value={newUnavailableDate}
-                    onChange={(e) => setNewUnavailableDate(e.target.value)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-rose-400"
-                  />
+            <Field label="Zauzeti datumi">
+              <div className="flex flex-col gap-3 md:flex-row">
+                <input
+                  type="date"
+                  value={newUnavailableDate}
+                  onChange={(e) => setNewUnavailableDate(e.target.value)}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-rose-400"
+                />
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!newUnavailableDate) return;
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newUnavailableDate) return;
 
-                      if (!unavailableDates.includes(newUnavailableDate)) {
-                        setUnavailableDates([
-                          ...unavailableDates,
-                          newUnavailableDate,
-                        ]);
+                    if (!unavailableDates.includes(newUnavailableDate)) {
+                      setUnavailableDates([...unavailableDates, newUnavailableDate]);
+                    }
+
+                    setNewUnavailableDate("");
+                  }}
+                  className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600"
+                >
+                  Dodaj zauzet datum
+                </button>
+              </div>
+
+              {unavailableDates.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {unavailableDates.map((date) => (
+                    <button
+                      key={date}
+                      type="button"
+                      onClick={() =>
+                        setUnavailableDates(
+                          unavailableDates.filter((item) => item !== date)
+                        )
                       }
-
-                      setNewUnavailableDate("");
-                    }}
-                    className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600"
-                  >
-                    Dodaj zauzet datum
-                  </button>
+                      className="rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-white"
+                    >
+                      {date} ×
+                    </button>
+                  ))}
                 </div>
-
-                {unavailableDates.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {unavailableDates.map((date) => (
-                      <button
-                        key={date}
-                        type="button"
-                        onClick={() =>
-                          setUnavailableDates(
-                            unavailableDates.filter((item) => item !== date)
-                          )
-                        }
-                        className="rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-white"
-                      >
-                        {date} ×
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </Field>
 
-            <Field
-              label="Opis"
-              hint={`${description.length}/1000 karaktera. Nije obavezno, ali je preporučeno uneti detalje.`}
-            >
+            <Field label="Opis">
               <textarea
                 value={description}
-                onChange={(e) =>
-                  setDescription(e.target.value.slice(0, 1000))
-                }
+                onChange={(e) => setDescription(e.target.value.slice(0, 1000))}
                 rows={4}
                 placeholder="Opiši uslugu, kapacitet, opremu, uslove..."
                 className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 outline-none focus:border-rose-400 focus:bg-white"
               />
             </Field>
 
-            <Field
-              label="Cena"
-              hint="Ako ne uneseš cenu, prikazuje se Po dogovoru."
-            >
+            <Field label="Cena" hint="Ako ne uneseš cenu, prikazuje se Po dogovoru.">
               <div className="grid gap-3 md:grid-cols-[160px_1fr_1fr]">
                 <select
                   value={priceMode}
@@ -668,9 +650,7 @@ export default function AddServicePage() {
                 <input
                   value={contactInstagram}
                   onChange={(e) => setContactInstagram(e.target.value)}
-                  onBlur={() =>
-                    setContactInstagram(normalizeInstagram(contactInstagram))
-                  }
+                  onBlur={() => setContactInstagram(normalizeInstagram(contactInstagram))}
                   placeholder="@instagram"
                   className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-rose-400 focus:bg-white"
                 />
@@ -691,11 +671,44 @@ export default function AddServicePage() {
               </div>
             </Field>
 
-            <Field label="Slike / video">
+            <Field
+              label="Cover slika"
+              hint="Ova slika se prikazuje na vrhu kartice usluge."
+            >
+              <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-dashed border-rose-300 bg-rose-50/40 px-4 py-4 transition hover:bg-rose-50">
+                <div>
+                  <p className="text-sm font-black text-slate-900">
+                    Upload cover slike
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Preporučeno: horizontalna slika
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-white px-4 py-2 text-xs font-black text-slate-700 shadow-sm">
+                  Izaberi
+                </span>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                />
+              </label>
+
+              {coverFile && (
+                <div className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">
+                  {coverFile.name}
+                </div>
+              )}
+            </Field>
+
+            <Field label="Galerija / video">
               <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 transition hover:border-rose-300 hover:bg-rose-50/40">
                 <div>
                   <p className="text-sm font-black text-slate-900">
-                    Upload fajlova
+                    Upload dodatnih fajlova
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
                     Slike ili video, više fajlova
@@ -767,16 +780,12 @@ export default function AddServicePage() {
           <div className="mt-5 rounded-2xl bg-slate-50 p-4">
             <p className="text-xs font-black uppercase text-slate-400">Cena</p>
             <p className="mt-1 text-2xl font-black text-slate-950">
-              {priceMode === "agreement"
-                ? "Po dogovoru"
-                : `${priceFrom || "0"} ${currency}`}
+              {priceMode === "agreement" ? "Po dogovoru" : `${priceFrom || "0"} ${currency}`}
             </p>
           </div>
 
           <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-black uppercase text-slate-400">
-              Kontakt
-            </p>
+            <p className="text-xs font-black uppercase text-slate-400">Kontakt</p>
             <p className="mt-2 text-sm font-bold text-slate-700">
               {contactPhone ||
                 contactEmail ||
@@ -788,8 +797,8 @@ export default function AddServicePage() {
           </div>
 
           <p className="mt-5 text-xs leading-5 text-slate-500">
-            Nakon odobrenja, usluga se prikazuje u izabranoj kategoriji i
-            području dostupnosti.
+            Nakon odobrenja, usluga se prikazuje u izabranoj kategoriji i području
+            dostupnosti.
           </p>
         </aside>
       </section>
