@@ -18,20 +18,26 @@ export async function GET() {
     `
     )
     .eq("status", "approved")
-    .eq("is_featured", true)
     .order("featured_order", { ascending: true })
     .order("featured_at", { ascending: false })
-    .limit(24);
+    .limit(100);
 
   if (error) {
     return NextResponse.json(
-      { success: false, error: error.message },
+      {
+        success: false,
+        error: error.message,
+      },
       { status: 500 }
     );
   }
 
+  const featured = (data || [])
+    .filter((service) => service.is_featured === true)
+    .slice(0, 24);
+
   return NextResponse.json({
     success: true,
-    data: data || [],
+    data: featured,
   });
 }

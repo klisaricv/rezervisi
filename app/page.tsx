@@ -295,17 +295,29 @@ function cleanLocationText(value: string) {
     .filter(Boolean);
 }
 
-function getLocationLabel(service: Service) {
+function getLocationParts(service: Service) {
   if (service.coverage_area) {
-    const parts = cleanLocationText(service.coverage_area);
-    if (parts.length) return parts.slice(0, 2).join(", ");
+    const cleaned = cleanLocationText(service.coverage_area);
+    if (cleaned.length) return cleaned;
   }
 
-  if (service.city && service.city !== "Nije precizirano") return service.city;
-  if (service.region) return service.region;
-  if (service.country) return service.country;
+  const fallback = [service.city, service.region, service.country]
+    .filter(Boolean)
+    .filter((item) => item !== "Nije precizirano") as string[];
 
-  return "Lokacija nije precizirana";
+  if (fallback.length) return fallback;
+
+  return ["Lokacija nije precizirana"];
+}
+
+function getContact(service: Service) {
+  if (service.contact_phone) return service.contact_phone;
+  if (service.contact_email) return service.contact_email;
+  if (service.contact_instagram) return service.contact_instagram;
+  if (service.contact_facebook) return service.contact_facebook;
+  if (service.contact_website) return service.contact_website;
+
+  return "Kontakt nije unet";
 }
 
 function getPublicUrl(path?: string | null) {
@@ -325,27 +337,23 @@ function getCoverImageUrl(service: Service) {
   return getPublicUrl(path);
 }
 
-function priceLabel(service: Service) {
-  if (service.price_type === "agreement" || !service.price_from) {
-    return "Po dogovoru";
-  }
-
-  return `od ${service.price_from} ${service.currency}`;
-}
-
 function FeaturedCard({ service }: { service: Service }) {
   const coverImageUrl = getCoverImageUrl(service);
+  const locationParts = getLocationParts(service);
+  const visibleLocations = locationParts.slice(0, 4);
+  const extraLocationsCount = Math.max(locationParts.length - 4, 0);
+
   const detailCategory = getCategorySlugFromService(service);
   const detailSlug = service.service_slug || slugify(service.title) || service.id;
 
   const shortDescription =
-    service.description && service.description.length > 115
-      ? `${service.description.slice(0, 115).trim()}...`
+    service.description && service.description.length > 150
+      ? `${service.description.slice(0, 150).trim()}...`
       : service.description || "Opis nije dodat.";
 
   return (
-    <article className="group overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card transition hover:-translate-y-1 hover:shadow-premium">
-      <div className="relative h-52 overflow-hidden bg-gradient-to-br from-slate-100 via-rose-50 to-orange-50">
+    <article className="group flex h-full flex-col overflow-hidden rounded-[30px] border border-slate-200/70 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_85px_rgba(15,23,42,0.14)]">
+      <div className="relative h-[285px] overflow-hidden bg-gradient-to-br from-slate-100 via-rose-50 to-orange-50">
         {coverImageUrl ? (
           <>
             <img
@@ -354,10 +362,10 @@ function FeaturedCard({ service }: { service: Service }) {
               className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl opacity-35"
             />
 
-            <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-slate-950/20" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/5 to-slate-950/5" />
 
-            <div className="absolute inset-3 rounded-[24px] border border-white/70 bg-white/35 p-2 shadow-[0_12px_40px_rgba(15,23,42,0.10)] backdrop-blur-md">
-              <div className="h-full w-full overflow-hidden rounded-[18px] bg-white/70">
+            <div className="absolute inset-x-4 top-4 bottom-4 z-10 rounded-[26px] border border-white/70 bg-white/35 p-3 shadow-[0_12px_40px_rgba(15,23,42,0.10)] backdrop-blur-md">
+              <div className="h-full w-full overflow-hidden rounded-[20px] bg-white/70">
                 <img
                   src={coverImageUrl}
                   alt={service.title}
@@ -367,51 +375,96 @@ function FeaturedCard({ service }: { service: Service }) {
             </div>
           </>
         ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-rose-500 via-orange-500 to-amber-400 text-5xl">
-            ✨
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-rose-500 via-orange-500 to-amber-400 text-6xl">
+            🏛️
           </div>
         )}
 
-        <div className="absolute left-4 top-4 rounded-full bg-slate-950/85 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-white shadow-lg backdrop-blur">
-          Preporučeno
+        <div className="absolute left-5 top-5 z-20 rounded-full bg-slate-950/90 px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-white shadow-xl backdrop-blur-md">
+          Preporučujemo
         </div>
 
-        <button className="absolute right-4 top-4 rounded-full bg-white/95 px-3 py-2 text-lg shadow-lg transition hover:bg-rose-600 hover:text-white">
+        <button
+          type="button"
+          className="absolute right-5 top-5 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/95 text-xl text-slate-700 shadow-xl backdrop-blur transition hover:bg-rose-600 hover:text-white"
+          aria-label="Sačuvaj"
+        >
           ♡
         </button>
       </div>
 
-      <div className="p-5">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <span className="rounded-full bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-600">
+      <div className="flex flex-1 flex-col px-6 pb-6 pt-5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="rounded-full bg-rose-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-rose-600">
             {getCategoryLabel(service)}
           </span>
 
-          <span className="text-xs font-bold text-slate-400">Verifikovano</span>
+          <span className="rounded-full bg-emerald-50 px-3 py-2 text-[11px] font-black text-emerald-700">
+            ✓ Verifikovano
+          </span>
         </div>
 
-        <h3 className="text-xl font-black tracking-tight text-slate-950">
-          {service.title}
-        </h3>
+        <div className="mt-5 rounded-[24px] border border-slate-100 bg-gradient-to-br from-white via-slate-50/80 to-white p-5 shadow-sm">
+          <h3 className="text-[27px] font-black leading-[1.08] tracking-tight text-slate-950">
+            {service.title}
+          </h3>
 
-        <p className="mt-3 min-h-[72px] text-sm leading-6 text-slate-600">
-          {shortDescription}
-        </p>
+          <div className="mt-4 h-px w-full bg-gradient-to-r from-rose-200 via-slate-200 to-transparent" />
 
-        <div className="mt-4 flex items-start gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600">
-          <span>📍</span>
-          <span>{getLocationLabel(service)}</span>
+          <p className="mt-4 min-h-[78px] text-[15px] leading-7 text-slate-600">
+            {shortDescription}
+          </p>
         </div>
 
-        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-          <div>
-            <p className="text-xs font-black uppercase text-slate-400">Cena</p>
-            <p className="text-xl font-black text-slate-950">{priceLabel(service)}</p>
+        <div className="mt-4 rounded-[22px] border border-slate-100 bg-slate-50/80 p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm shadow-sm ring-1 ring-slate-100">
+              📍
+            </span>
+            <span className="text-[12px] font-black uppercase tracking-[0.18em] text-slate-400">
+              Dostupnost
+            </span>
           </div>
 
+          <div className="flex flex-wrap gap-2">
+            {visibleLocations.map((item) => (
+              <span
+                key={item}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm"
+              >
+                {item}
+              </span>
+            ))}
+
+            {extraLocationsCount > 0 && (
+              <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 shadow-sm">
+                +{extraLocationsCount}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-[22px] border border-slate-100 bg-slate-50/80 p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm shadow-sm ring-1 ring-slate-100">
+              ☎
+            </span>
+            <span className="text-[12px] font-black uppercase tracking-[0.18em] text-slate-400">
+              Kontakt
+            </span>
+          </div>
+
+          <div className="rounded-[16px] border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <p className="break-words text-[16px] font-black leading-6 text-slate-800">
+              {getContact(service)}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5">
           <a
             href={`/${detailCategory}/${detailSlug}`}
-            className="rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600"
+            className="flex w-full items-center justify-center rounded-[20px] bg-slate-950 px-6 py-4 text-sm font-black uppercase tracking-[0.08em] text-white shadow-lg shadow-slate-950/15 transition hover:bg-rose-600 hover:shadow-rose-600/20"
           >
             Detalji
           </a>
@@ -423,16 +476,19 @@ function FeaturedCard({ service }: { service: Service }) {
 
 function FeaturedCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-card">
-      <div className="h-52 animate-pulse bg-slate-100" />
-      <div className="space-y-4 p-5">
-        <div className="flex justify-between">
-          <div className="h-8 w-28 animate-pulse rounded-full bg-slate-100" />
-          <div className="h-5 w-20 animate-pulse rounded-full bg-slate-100" />
+    <div className="overflow-hidden rounded-[30px] border border-slate-200/70 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.08)]">
+      <div className="h-[285px] animate-pulse bg-slate-100" />
+
+      <div className="space-y-4 p-6">
+        <div className="flex justify-between gap-3">
+          <div className="h-9 w-32 animate-pulse rounded-full bg-slate-100" />
+          <div className="h-9 w-28 animate-pulse rounded-full bg-slate-100" />
         </div>
-        <div className="h-7 w-3/4 animate-pulse rounded-xl bg-slate-100" />
-        <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
-        <div className="h-14 animate-pulse rounded-2xl bg-slate-100" />
+
+        <div className="h-44 animate-pulse rounded-[24px] bg-slate-100" />
+        <div className="h-28 animate-pulse rounded-[22px] bg-slate-100" />
+        <div className="h-28 animate-pulse rounded-[22px] bg-slate-100" />
+        <div className="h-14 animate-pulse rounded-[20px] bg-slate-100" />
       </div>
     </div>
   );
@@ -482,7 +538,9 @@ function Section({
   href: string;
   services: Service[];
 }) {
-  const data = services.filter((service) => service.category_slug === categorySlug);
+  const data = services.filter(
+    (service) => getCategorySlugFromService(service) === categorySlug
+  );
 
   if (!data.length) return null;
 
@@ -507,8 +565,8 @@ function Section({
         </a>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {data.slice(0, 4).map((service) => (
+      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+        {data.slice(0, 3).map((service) => (
           <FeaturedCard key={service.id} service={service} />
         ))}
       </div>
@@ -629,8 +687,8 @@ export default function Page() {
             <div className="mt-3 h-10 w-80 max-w-full animate-pulse rounded-2xl bg-slate-100" />
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((item) => (
+          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3].map((item) => (
               <FeaturedCardSkeleton key={item} />
             ))}
           </div>

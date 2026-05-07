@@ -61,16 +61,26 @@ export default function Header({
   useEffect(() => {
     loadAuthState();
 
+    function closeOnEscape(event: KeyboardEvent) {
+        if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+        }
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+
     const {
-      data: { subscription },
+        data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
-      loadAuthState();
+        setMobileMenuOpen(false);
+        loadAuthState();
     });
 
     return () => {
-      subscription.unsubscribe();
+        window.removeEventListener("keydown", closeOnEscape);
+        subscription.unsubscribe();
     };
-  }, []);
+    }, []);
 
   return (
     <>
