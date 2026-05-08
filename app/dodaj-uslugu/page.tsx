@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import SiteHeader from "../../components/Header";
 
@@ -30,6 +31,194 @@ const locationData: Record<string, Record<string, string[]>> = {
   },
 };
 
+const IMAGE_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "gif",
+  "avif",
+  "heic",
+  "heif",
+  "bmp",
+  "tif",
+  "tiff",
+];
+
+const VIDEO_EXTENSIONS = [
+  "mp4",
+  "mov",
+  "m4v",
+  "webm",
+  "ogv",
+  "ogg",
+  "3gp",
+  "3gpp",
+  "mpeg",
+  "mpg",
+];
+
+const IMAGE_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "image/heic",
+  "image/heif",
+  "image/bmp",
+  "image/tiff",
+  "image/x-tiff",
+];
+
+const VIDEO_MIME_TYPES = [
+  "video/mp4",
+  "video/quicktime",
+  "video/x-m4v",
+  "video/webm",
+  "video/ogg",
+  "video/3gpp",
+  "video/mpeg",
+];
+
+const MAX_IMAGE_SIZE_MB = 25;
+const MAX_VIDEO_SIZE_MB = 300;
+
+const COVER_ACCEPT =
+  "image/jpeg,image/png,image/webp,image/gif,image/avif,image/heic,image/heif,image/bmp,image/tiff,.jpg,.jpeg,.png,.webp,.gif,.avif,.heic,.heif,.bmp,.tif,.tiff";
+
+const GALLERY_ACCEPT =
+  "image/jpeg,image/png,image/webp,image/gif,image/avif,image/heic,image/heif,image/bmp,image/tiff,video/mp4,video/quicktime,video/x-m4v,video/webm,video/ogg,video/3gpp,video/mpeg,.jpg,.jpeg,.png,.webp,.gif,.avif,.heic,.heif,.bmp,.tif,.tiff,.mp4,.mov,.m4v,.webm,.ogv,.ogg,.3gp,.3gpp,.mpeg,.mpg";
+
+function getFileExtension(fileName: string) {
+  return fileName.split(".").pop()?.toLowerCase() || "";
+}
+
+function isImageFile(file: File) {
+  const ext = getFileExtension(file.name);
+  return IMAGE_MIME_TYPES.includes(file.type) || IMAGE_EXTENSIONS.includes(ext);
+}
+
+function isVideoFile(file: File) {
+  const ext = getFileExtension(file.name);
+  return VIDEO_MIME_TYPES.includes(file.type) || VIDEO_EXTENSIONS.includes(ext);
+}
+
+function getUploadContentType(file: File) {
+  if (file.type && file.type !== "application/octet-stream") {
+    return file.type;
+  }
+
+  const ext = getFileExtension(file.name);
+
+  const byExtension: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    avif: "image/avif",
+    heic: "image/heic",
+    heif: "image/heif",
+    bmp: "image/bmp",
+    tif: "image/tiff",
+    tiff: "image/tiff",
+
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    m4v: "video/x-m4v",
+    webm: "video/webm",
+    ogv: "video/ogg",
+    ogg: "video/ogg",
+    "3gp": "video/3gpp",
+    "3gpp": "video/3gpp",
+    mpeg: "video/mpeg",
+    mpg: "video/mpeg",
+  };
+
+  return byExtension[ext] || "application/octet-stream";
+}
+
+function getStoredFileType(file: File) {
+  if (isImageFile(file)) return "image";
+  if (isVideoFile(file)) return "video";
+  return getUploadContentType(file);
+}
+
+function formatMb(bytes: number) {
+  return (bytes / 1024 / 1024).toFixed(1);
+}
+
+function validateSingleFile(file: File, role: "cover" | "gallery") {
+  const isImage = isImageFile(file);
+  const isVideo = isVideoFile(file);
+
+  if (role === "cover" && !isImage) {
+    throw new Error(
+      `Cover mora biti slika. Fajl "${file.name}" nije podržan kao cover.`
+    );
+  }
+
+  if (role === "gallery" && !isImage && !isVideo) {
+    throw new Error(
+      `Fajl "${file.name}" nije podržan. Dozvoljene su slike i video fajlovi.`
+    );
+  }
+
+  if (isImage && file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+    throw new Error(
+      `Slika "${file.name}" je prevelika (${formatMb(
+        file.size
+      )} MB). Maksimalno je ${MAX_IMAGE_SIZE_MB} MB po slici.`
+    );
+  }
+
+  if (isVideo && file.size > MAX_VIDEO_SIZE_MB * 1024 * 1024) {
+    throw new Error(
+      `Video "${file.name}" je prevelik (${formatMb(
+        file.size
+      )} MB). Maksimalno je ${MAX_VIDEO_SIZE_MB} MB po videu.`
+    );
+  }
+}
+
+function createSafeFileName(fileName: string) {
+  const safeName = fileName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "dj")
+    .replace(/Đ/g, "dj")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return safeName || "upload";
+}
+
+async function uploadFile(serviceId: string, file: File, folder: string) {
+  const safeName = createSafeFileName(file.name);
+
+  const randomPart =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  const path = `${serviceId}/${folder}/${randomPart}-${safeName}`;
+  const contentType = getUploadContentType(file);
+
+  const { error } = await supabase.storage.from("service-media").upload(path, file, {
+    contentType,
+    cacheControl: "3600",
+    upsert: false,
+  });
+
+  if (error) {
+    throw new Error(`Upload nije uspeo za "${file.name}": ${error.message}`);
+  }
+
+  return path;
+}
+
 function Field({
   label,
   required,
@@ -39,7 +228,7 @@ function Field({
   label: string;
   required?: boolean;
   hint?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <label className="block">
@@ -235,20 +424,31 @@ export default function AddServicePage() {
     return cleaned.startsWith("@") ? cleaned : `@${cleaned}`;
   }
 
-  async function uploadFile(serviceId: string, file: File, folder: string) {
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const path = `${serviceId}/${folder}/${Date.now()}-${safeName}`;
-
-    const { error } = await supabase.storage.from("service-media").upload(path, file);
-
-    if (error) {
-      throw error;
+  function validateFilesBeforeSubmit() {
+    if (coverFile) {
+      validateSingleFile(coverFile, "cover");
     }
 
-    return path;
+    files.forEach((file) => {
+      validateSingleFile(file, "gallery");
+    });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function cleanupFailedService(
+    serviceId: string | null,
+    uploadedStoragePaths: string[]
+  ) {
+    if (uploadedStoragePaths.length > 0) {
+      await supabase.storage.from("service-media").remove(uploadedStoragePaths);
+    }
+
+    if (serviceId) {
+      await supabase.from("service_media").delete().eq("service_id", serviceId);
+      await supabase.from("services").delete().eq("id", serviceId);
+    }
+  }
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     setMessage(null);
@@ -315,7 +515,19 @@ export default function AddServicePage() {
       });
     }
 
+    try {
+      validateFilesBeforeSubmit();
+    } catch (err: any) {
+      return setMessage({
+        type: "error",
+        text: err?.message || "Jedan ili više fajlova nisu validni.",
+      });
+    }
+
     setLoading(true);
+
+    let createdServiceId: string | null = null;
+    const uploadedStoragePaths: string[] = [];
 
     try {
       const payload = {
@@ -363,37 +575,48 @@ export default function AddServicePage() {
       }
 
       const data = result.data;
+      createdServiceId = data?.id || null;
+
+      if (!createdServiceId) {
+        throw new Error("Usluga je kreirana, ali ID nije vraćen iz API-ja.");
+      }
 
       let coverImagePath: string | null = null;
 
-      if (coverFile && data?.id) {
-        coverImagePath = await uploadFile(data.id, coverFile, "cover");
+      if (coverFile) {
+        coverImagePath = await uploadFile(createdServiceId, coverFile, "cover");
+        uploadedStoragePaths.push(coverImagePath);
 
         const { error: updateCoverError } = await supabase
           .from("services")
           .update({
             cover_image_path: coverImagePath,
           })
-          .eq("id", data.id);
+          .eq("id", createdServiceId);
 
         if (updateCoverError) {
-          throw updateCoverError;
+          throw new Error(
+            `Cover slika je uploadovana, ali nije upisana u bazu: ${updateCoverError.message}`
+          );
         }
       }
 
-      if (files.length && data?.id) {
+      if (files.length) {
         for (const file of files) {
-          const path = await uploadFile(data.id, file, "gallery");
+          const path = await uploadFile(createdServiceId, file, "gallery");
+          uploadedStoragePaths.push(path);
 
           const { error: mediaError } = await supabase.from("service_media").insert({
-            service_id: data.id,
+            service_id: createdServiceId,
             file_path: path,
-            file_type: file.type,
+            file_type: getStoredFileType(file),
             file_name: file.name,
           });
 
           if (mediaError) {
-            throw mediaError;
+            throw new Error(
+              `Fajl "${file.name}" je uploadovan, ali nije upisan u bazu: ${mediaError.message}`
+            );
           }
         }
       }
@@ -423,9 +646,17 @@ export default function AddServicePage() {
       setFiles([]);
       setCompanyWebsite("");
     } catch (err: any) {
+      try {
+        await cleanupFailedService(createdServiceId, uploadedStoragePaths);
+      } catch (cleanupError) {
+        console.error("Cleanup failed:", cleanupError);
+      }
+
       setMessage({
         type: "error",
-        text: err?.message || "Greška pri kreiranju usluge.",
+        text:
+          err?.message ||
+          "Greška pri kreiranju usluge. Listing nije sačuvan jer upload fajlova nije prošao.",
       });
     } finally {
       setLoading(false);
@@ -677,7 +908,7 @@ export default function AddServicePage() {
 
             <Field
               label="Cover slika"
-              hint="Ova slika se prikazuje na vrhu kartice usluge."
+              hint={`Ova slika se prikazuje na vrhu kartice usluge. Dozvoljeno: JPG, PNG, WEBP, GIF, AVIF, HEIC, HEIF, BMP, TIFF. Maksimalno ${MAX_IMAGE_SIZE_MB} MB.`}
             >
               <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-dashed border-rose-300 bg-rose-50/40 px-4 py-4 transition hover:bg-rose-50">
                 <div>
@@ -695,7 +926,7 @@ export default function AddServicePage() {
 
                 <input
                   type="file"
-                  accept="image/*"
+                  accept={COVER_ACCEPT}
                   className="hidden"
                   onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
                 />
@@ -708,7 +939,10 @@ export default function AddServicePage() {
               )}
             </Field>
 
-            <Field label="Galerija / video">
+            <Field
+              label="Galerija / video"
+              hint={`Dozvoljene su slike i video fajlovi. Slike maksimalno ${MAX_IMAGE_SIZE_MB} MB, video maksimalno ${MAX_VIDEO_SIZE_MB} MB po fajlu.`}
+            >
               <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 transition hover:border-rose-300 hover:bg-rose-50/40">
                 <div>
                   <p className="text-sm font-black text-slate-900">
@@ -726,7 +960,7 @@ export default function AddServicePage() {
                 <input
                   type="file"
                   multiple
-                  accept="image/*,video/*"
+                  accept={GALLERY_ACCEPT}
                   className="hidden"
                   onChange={(e) => setFiles(Array.from(e.target.files || []))}
                 />
@@ -734,9 +968,9 @@ export default function AddServicePage() {
 
               {files.length > 0 && (
                 <div className="mt-3 grid gap-2">
-                  {files.map((file) => (
+                  {files.map((file, index) => (
                     <div
-                      key={file.name}
+                      key={`${file.name}-${index}`}
                       className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600"
                     >
                       {file.name}
